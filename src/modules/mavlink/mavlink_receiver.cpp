@@ -1212,6 +1212,10 @@ MavlinkReceiver::handle_message_vision_position_estimate(mavlink_message_t *msg)
 	vision_position.z = pos.z;
 
 	struct vehicle_attitude_s vision_attitude = {};
+	//lyuxmin q.from_euler_pry
+	math::Matrix<3, 3> R;
+	R.from_euler(pos.roll, pos.pitch, pos.yaw);
+	q.from_dcm(R);
 
 	vision_attitude.timestamp = sync_stamp(pos.usec);
 

@@ -211,13 +211,19 @@ public:
 		double cosPsi_2 = cos(double(yaw) / 2.0);
 		double sinPsi_2 = sin(double(yaw) / 2.0);
 
-		/* operations executed in double to avoid loss of precision through
-		 * consecutive multiplications. Result stored as float.
-		 */
-		data[0] = static_cast<float>(cosPhi_2 * cosTheta_2 * cosPsi_2 + sinPhi_2 * sinTheta_2 * sinPsi_2);
+		 // operations executed in double to avoid loss of precision through
+		 // consecutive multiplications. Result stored as float.
+		 // this is for rpy i.e. zyx Tait-Bryan angles
+		// data[0] = static_cast<float>(cosPhi_2 * cosTheta_2 * cosPsi_2 + sinPhi_2 * sinTheta_2 * sinPsi_2);
+		// data[1] = static_cast<float>(sinPhi_2 * cosTheta_2 * cosPsi_2 - cosPhi_2 * sinTheta_2 * sinPsi_2);
+		// data[2] = static_cast<float>(cosPhi_2 * sinTheta_2 * cosPsi_2 + sinPhi_2 * cosTheta_2 * sinPsi_2);
+		// data[3] = static_cast<float>(cosPhi_2 * cosTheta_2 * sinPsi_2 - sinPhi_2 * sinTheta_2 * cosPsi_2);
+
+		// this is for pry i.e. zxy Tait-Bryan angles
+		data[0] = static_cast<float>(cosPhi_2 * cosTheta_2 * cosPsi_2 - sinPhi_2 * sinTheta_2 * sinPsi_2);
 		data[1] = static_cast<float>(sinPhi_2 * cosTheta_2 * cosPsi_2 - cosPhi_2 * sinTheta_2 * sinPsi_2);
 		data[2] = static_cast<float>(cosPhi_2 * sinTheta_2 * cosPsi_2 + sinPhi_2 * cosTheta_2 * sinPsi_2);
-		data[3] = static_cast<float>(cosPhi_2 * cosTheta_2 * sinPsi_2 - sinPhi_2 * sinTheta_2 * cosPsi_2);
+		data[3] = static_cast<float>(cosPhi_2 * cosTheta_2 * sinPsi_2 + sinPhi_2 * sinTheta_2 * cosPsi_2);
 	}
 
 	/**
@@ -236,12 +242,34 @@ public:
 	 */
 	Vector<3> to_euler() const
 	{
+		// this is to euler rpy with euler.data[0]=phi euler.data[1]=theta euler.data[2]=psi
+
+		// return Vector<3>(
+		// 	atan2f(2.0f * (data[0] * data[1] + data[2] * data[3]), 1.0f - 2.0f * (data[1] * data[1] + data[2] * data[2])),
+		// 	asinf(2.0f * (data[0] * data[2] - data[3] * data[1])),
+		// 	atan2f(2.0f * (data[0] * data[3] + data[1] * data[2]), 1.0f - 2.0f * (data[2] * data[2] + data[3] * data[3]))
+		// );
+
+	 // create Euler angles vector from the quaternion (this is zxy euler angle,pitch roll yaw)
+	 // euler.data[0]=phi euler.data[1]=theta euler.data[2]=psi
 		return Vector<3>(
-			       atan2f(2.0f * (data[0] * data[1] + data[2] * data[3]), 1.0f - 2.0f * (data[1] * data[1] + data[2] * data[2])),
-			       asinf(2.0f * (data[0] * data[2] - data[3] * data[1])),
-			       atan2f(2.0f * (data[0] * data[3] + data[1] * data[2]), 1.0f - 2.0f * (data[2] * data[2] + data[3] * data[3]))
+			asinf (2.0f * (data[0] * data[1] + data[2] * data[3])),
+			atan2f(-2.0f * (data[1] * data[3] - data[0] * data[2]), 1.0f - 2.0f * (data[1] * data[1] + data[2] * data[2])),
+			atan2f(-2.0f * (data[1] * data[2] - data[0] * data[3]), 1.0f - 2.0f * (data[1] * data[1] + data[3] * data[3]))
 		       );
 	}
+
+	/**
+	 * create Euler angles vector from the quaternion (this is zxy euler angle,pitch roll yaw)
+	 * euler.data[0]=phi euler.data[1]=theta euler.data[2]=psi
+	 */
+	// Vector<3> to_euler_pry() const {
+	// 	return Vector<3>(
+	// 		asinf (2.0f * (data[0] * data[1] + data[2] * data[3])),
+	// 		atan2f(-2.0f * (data[1] * data[3] - data[0] * data[2]), 1.0f - 2.0f * (data[1] * data[1] + data[2] * data[2])),
+	// 		atan2f(-2.0f * (data[1] * data[2] - data[0] * data[3]), 1.0f - 2.0f * (data[1] * data[1] + data[3] * data[3]))
+	// 	);
+	// }
 
 	/**
 	 * set quaternion to rotation by DCM

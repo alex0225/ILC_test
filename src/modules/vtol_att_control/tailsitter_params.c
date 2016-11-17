@@ -55,3 +55,14 @@
  * @group VTOL Attitude Control
 
 PARAM_DEFINE_FLOAT(VT_TRANS_P2_DUR, 0.5f);*/
+
+ /**
+ * Front transition angle
+ *
+ * Target front transition angle (trigger option one, actual transition sp angle will + 5 degree)
+ *
+ * @min 45
+ * @max 80.0
+ * @group VTOL Attitude Control
+ */
+PARAM_DEFINE_FLOAT(VT_F_TRANS_ANG, 70.0f);

@@ -639,6 +639,17 @@ void print_status()
 	warnx("home: lat = %.7f, lon = %.7f, alt = %.2f, yaw: %.2f", _home.lat, _home.lon, (double)_home.alt, (double)_home.yaw);
 	warnx("home: x = %.7f, y = %.7f, z = %.2f ", (double)_home.x, (double)_home.y, (double)_home.z);
 	warnx("datalink: %s", (status.data_link_lost) ? "LOST" : "OK");
+	warnx("flag_control_manual_enabled: %s", control_mode.flag_control_manual_enabled ? "ture" : "false");
+	warnx("flag_control_auto_enabled: %s", control_mode.flag_control_auto_enabled ? "ture" : "false");
+	warnx("flag_control_rates_enabled: %s", control_mode.flag_control_rates_enabled ? "ture" : "false");
+	warnx("flag_control_attitude_enabled: %s", control_mode.flag_control_attitude_enabled ? "ture" : "false");
+	warnx("flag_control_rattitude_enabled: %s", control_mode.flag_control_rattitude_enabled ? "ture" : "false");
+	warnx("flag_control_altitude_enabled: %s", control_mode.flag_control_altitude_enabled ? "ture" : "false");
+	warnx("flag_control_climb_rate_enabled: %s", control_mode.flag_control_climb_rate_enabled ? "ture" : "false");
+	warnx("flag_control_position_enabled: %s", control_mode.flag_control_position_enabled ? "ture" : "false");
+	warnx("flag_control_velocity_enabled: %s", control_mode.flag_control_velocity_enabled ? "ture" : "false");
+	warnx("flag_control_acceleration_enabled: %s", control_mode.flag_control_acceleration_enabled ? "ture" : "false");
+	warnx("flag_control_termination_enabled: %s", control_mode.flag_control_termination_enabled ? "ture" : "false");
 
 #ifdef __PX4_POSIX
 	warnx("main state: %d", internal_state.main_state);

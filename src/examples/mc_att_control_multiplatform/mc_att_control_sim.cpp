@@ -122,6 +122,7 @@ void MulticopterAttitudeControlSim::set_attitude_reference(const Eigen::Vector4d
 	// setup rotation matrix
 	math::Matrix<3, 3> Rot_sp;
 	Rot_sp.from_euler(_v_att_sp.roll_body, _v_att_sp.pitch_body, _v_att_sp.yaw_body);
+	// Rot_sp.from_euler_pry(_v_att_sp.pitch_body, _v_att_sp.roll_body, _v_att_sp.yaw_body);
 	_v_att_sp.R_body[0][0] = Rot_sp(0, 0);
 	_v_att_sp.R_body[1][0] = Rot_sp(1, 0);
 	_v_att_sp.R_body[2][0] = Rot_sp(2, 0);

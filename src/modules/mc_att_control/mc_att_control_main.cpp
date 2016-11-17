@@ -856,60 +856,82 @@ MulticopterAttitudeControl::control_attitude(float dt)
 	math::Vector<3> R_z(R(0, 2), R(1, 2), R(2, 2));
 	math::Vector<3> R_sp_z(R_sp(0, 2), R_sp(1, 2), R_sp(2, 2));
 
-	/* axis and sin(angle) of desired rotation */
-	math::Vector<3> e_R = R.transposed() * (R_z % R_sp_z);
+	/* use quaternion with linearization */
+	math::Matrix<3, 3> e_R_M = R.transposed() * R_sp;
+	math::Quaternion q_e;
+	q_e.from_dcm(e_R_M);
+	float sign = 1.0f;
+	if (q_e(0) > 0.0f) {
+		sign = 1.0f;
+	} else {
+		sign = -1.0f;
+	}
+	q_e = q_e * sign;
+	math::Vector<3> e_R = q_e.imag();
+	// start to linearize: q.imag is sin(theta/2)*w
+	float rotate_angle = 2.0f * acosf(q_e(0));
+	if (rotate_angle < 0.001f){
+		e_R = e_R/(0.5f - 0.020833f * rotate_angle * rotate_angle);
+	} else {
+		e_R = e_R*rotate_angle/sinf(rotate_angle/2.0f);
+	}
 
-	/* calculate angle error */
-	float e_R_z_sin = e_R.length();
-	float e_R_z_cos = R_z * R_sp_z;
-
-	/* calculate weight for yaw control */
 	float yaw_w = R_sp(2, 2) * R_sp(2, 2);
 
-	/* calculate rotation matrix after roll/pitch only rotation */
-	math::Matrix<3, 3> R_rp;
+	/* axis and sin(angle) of desired rotation */
+	// math::Vector<3> e_R = R.transposed() * (R_z % R_sp_z);
 
-	if (e_R_z_sin > 0.0f) {
-		/* get axis-angle representation */
-		float e_R_z_angle = atan2f(e_R_z_sin, e_R_z_cos);
-		math::Vector<3> e_R_z_axis = e_R / e_R_z_sin;
+	/* calculate angle error */
+	// float e_R_z_sin = e_R.length();
+	// float e_R_z_cos = R_z * R_sp_z;
 
-		e_R = e_R_z_axis * e_R_z_angle;
+	// /* calculate weight for yaw control */
+	// float yaw_w = R_sp(2, 2) * R_sp(2, 2);
 
-		/* cross product matrix for e_R_axis */
-		math::Matrix<3, 3> e_R_cp;
-		e_R_cp.zero();
-		e_R_cp(0, 1) = -e_R_z_axis(2);
-		e_R_cp(0, 2) = e_R_z_axis(1);
-		e_R_cp(1, 0) = e_R_z_axis(2);
-		e_R_cp(1, 2) = -e_R_z_axis(0);
-		e_R_cp(2, 0) = -e_R_z_axis(1);
-		e_R_cp(2, 1) = e_R_z_axis(0);
+	// /* calculate rotation matrix after roll/pitch only rotation */
+	// math::Matrix<3, 3> R_rp;
 
-		/* rotation matrix for roll/pitch only rotation */
-		R_rp = R * (_I + e_R_cp * e_R_z_sin + e_R_cp * e_R_cp * (1.0f - e_R_z_cos));
+	// if (e_R_z_sin > 0.0f) {
+	// 	/* get axis-angle representation */
+	// 	float e_R_z_angle = atan2f(e_R_z_sin, e_R_z_cos);
+	// 	math::Vector<3> e_R_z_axis = e_R / e_R_z_sin;
 
-	} else {
-		/* zero roll/pitch rotation */
-		R_rp = R;
-	}
+	// 	e_R = e_R_z_axis * e_R_z_angle;
 
-	/* R_rp and R_sp has the same Z axis, calculate yaw error */
-	math::Vector<3> R_sp_x(R_sp(0, 0), R_sp(1, 0), R_sp(2, 0));
-	math::Vector<3> R_rp_x(R_rp(0, 0), R_rp(1, 0), R_rp(2, 0));
-	e_R(2) = atan2f((R_rp_x % R_sp_x) * R_sp_z, R_rp_x * R_sp_x) * yaw_w;
+	// 	/* cross product matrix for e_R_axis */
+	// 	math::Matrix<3, 3> e_R_cp;
+	// 	e_R_cp.zero();
+	// 	e_R_cp(0, 1) = -e_R_z_axis(2);
+	// 	e_R_cp(0, 2) = e_R_z_axis(1);
+	// 	e_R_cp(1, 0) = e_R_z_axis(2);
+	// 	e_R_cp(1, 2) = -e_R_z_axis(0);
+	// 	e_R_cp(2, 0) = -e_R_z_axis(1);
+	// 	e_R_cp(2, 1) = e_R_z_axis(0);
 
-	if (e_R_z_cos < 0.0f) {
-		/* for large thrust vector rotations use another rotation method:
-		 * calculate angle and axis for R -> R_sp rotation directly */
-		math::Quaternion q_error;
-		q_error.from_dcm(R.transposed() * R_sp);
+	// 	/* rotation matrix for roll/pitch only rotation */
+	// 	R_rp = R * (_I + e_R_cp * e_R_z_sin + e_R_cp * e_R_cp * (1.0f - e_R_z_cos));
+
+	// } else {
+	// 	/* zero roll/pitch rotation */
+	// 	R_rp = R;
+	// }
+
+	// /* R_rp and R_sp has the same Z axis, calculate yaw error */
+	// math::Vector<3> R_sp_x(R_sp(0, 0), R_sp(1, 0), R_sp(2, 0));
+	// math::Vector<3> R_rp_x(R_rp(0, 0), R_rp(1, 0), R_rp(2, 0));
+	// e_R(2) = atan2f((R_rp_x % R_sp_x) * R_sp_z, R_rp_x * R_sp_x) * yaw_w;
+
+	// if (e_R_z_cos < 0.0f) {
+	// 	/* for large thrust vector rotations use another rotation method:
+	// 	 * calculate angle and axis for R -> R_sp rotation directly */
+	// 	math::Quaternion q_error;
+	// 	q_error.from_dcm(R.transposed() * R_sp);
 		math::Vector<3> e_R_d = q_error(0) >= 0.0f ? q_error.imag()  * 2.0f : -q_error.imag() * 2.0f;
 
-		/* use fusion of Z axis based rotation and direct rotation */
-		float direct_w = e_R_z_cos * e_R_z_cos * yaw_w;
-		e_R = e_R * (1.0f - direct_w) + e_R_d * direct_w;
-	}
+	// 	/* use fusion of Z axis based rotation and direct rotation */
+	// 	float direct_w = e_R_z_cos * e_R_z_cos * yaw_w;
+	// 	e_R = e_R * (1.0f - direct_w) + e_R_d * direct_w;
+	// }
 
 	/* calculate angular rates setpoint */
 	_rates_sp = _params.att_p.emult(e_R);

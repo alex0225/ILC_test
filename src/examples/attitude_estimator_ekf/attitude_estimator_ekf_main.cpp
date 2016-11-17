@@ -385,6 +385,7 @@ int attitude_estimator_ekf_thread_main(int argc, char *argv[])
 
 						/* update mag declination rotation matrix */
 						R_decl.from_euler(0.0f, 0.0f, mag_decl);
+						// R_decl.from_euler_pry(0.0f, 0.0f, mag_decl);
 					}
 				}
 
@@ -543,6 +544,7 @@ int attitude_estimator_ekf_thread_main(int argc, char *argv[])
 
 						/* update mag declination rotation matrix */
 						R_decl.from_euler(0.0f, 0.0f, mag_decl);
+						// R_decl.from_euler_pry(0.0f, 0.0f, mag_decl);
 
 						x_aposteriori_k[0] = z_k[0];
 						x_aposteriori_k[1] = z_k[1];

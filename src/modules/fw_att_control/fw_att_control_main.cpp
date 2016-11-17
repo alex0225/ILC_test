@@ -108,8 +108,8 @@ public:
 
 private:
 
-	bool		_task_should_exit;		/**< if true, attitude control task should exit */
-	bool		_task_running;			/**< if true, task is running in its mainloop */
+	bool	_task_should_exit;		/**< if true, attitude control task should exit */
+	bool	_task_running;			/**< if true, task is running in its mainloop */
 	int		_control_task;			/**< task handle */
 
 	int		_att_sp_sub;			/**< vehicle attitude setpoint */
@@ -1030,15 +1030,22 @@ FixedwingAttitudeControl::task_main()
 
 				/* Reset integrators if the aircraft is on ground
 				 * or a multicopter (but not transitioning VTOL)
+					 // here is actually no reason -> lyuximin
 				 */
 				if (_vehicle_land_detected.landed
 				    || (_vehicle_status.is_rotary_wing && !_vehicle_status.in_transition_mode)) {
+					// this is actually for ground manual test
+
+
 
 					_roll_ctrl.reset_integrator();
 					_pitch_ctrl.reset_integrator();
 					_yaw_ctrl.reset_integrator();
 					_wheel_ctrl.reset_integrator();
 				}
+
+				// warnx ("in else loop");
+				// warnx("roll %2.4f pitch %2.4f yaw %2.4f thrust %2.4f",(double)_att_sp.roll_body,(double)_att_sp.pitch_body,(double)_att_sp.yaw_body,(double)_att_sp.thrust);
 
 				/* Prepare data for attitude controllers */
 				struct ECL_ControlData control_input = {};
@@ -1214,6 +1221,8 @@ FixedwingAttitudeControl::task_main()
 						_parameters.trim_pitch;
 				_actuators.control[actuator_controls_s::INDEX_YAW] = _manual.r * _parameters.man_yaw_scale + _parameters.trim_yaw;
 				_actuators.control[actuator_controls_s::INDEX_THROTTLE] = _manual.z;
+
+				// warnx("manual directly control");
 			}
 
 			// Add feed-forward from roll control output to yaw control output
@@ -1237,6 +1246,7 @@ FixedwingAttitudeControl::task_main()
 			if (_vcontrol_mode.flag_control_rates_enabled ||
 			    _vcontrol_mode.flag_control_attitude_enabled ||
 			    _vcontrol_mode.flag_control_manual_enabled) {
+
 				/* publish the actuator controls */
 				if (_actuators_0_pub != nullptr) {
 					orb_publish(_actuators_id, _actuators_0_pub, &_actuators);

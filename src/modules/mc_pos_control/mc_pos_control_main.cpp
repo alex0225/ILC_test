@@ -964,6 +964,7 @@ MulticopterPositionControl::control_manual(float dt)
 
 	/* setpoint in NED frame and scaled to cruise velocity */
 	man_vel_sp = matrix::Dcmf(matrix::Eulerf(0.0f, 0.0f, yaw_input_frame)) * man_vel_sp.emult(vel_cruise_scale);
+	// R_yaw_sp.from_euler_pry(0.0f, 0.0f, _att_sp.yaw_body);
 
 	/*
 	 * assisted velocity mode: user controls velocity, but if velocity is small enough, position
@@ -2098,6 +2099,7 @@ MulticopterPositionControl::calculate_thrust_setpoint(float dt)
 		/* autonomous altitude control without position control (failsafe landing),
 		 * force level attitude, don't change yaw */
 		_R_setpoint = matrix::Eulerf(0.0f, 0.0f, _att_sp.yaw_body);
+						// R.from_euler_pry(0.0f, 0.0f, _att_sp.yaw_body);
 
 		/* copy quaternion setpoint to attitude setpoint topic */
 		matrix::Quatf q_sp = _R_setpoint;
@@ -2181,6 +2183,7 @@ MulticopterPositionControl::generate_attitude_setpoint(float dt)
 			math::Vector<3> zB = {0, 0, 1};
 			math::Matrix<3, 3> R_sp_roll_pitch;
 			R_sp_roll_pitch.from_euler(_att_sp.roll_body, _att_sp.pitch_body, 0);
+			// R_sp_roll_pitch.from_euler_pry(_att_sp.pitch_body, _att_sp.roll_body, 0);
 			math::Vector<3> z_roll_pitch_sp = R_sp_roll_pitch * zB;
 
 
@@ -2189,6 +2192,7 @@ MulticopterPositionControl::generate_attitude_setpoint(float dt)
 			// into the direction of the desired heading
 			math::Matrix<3, 3> R_yaw_correction;
 			R_yaw_correction.from_euler(0.0f, 0.0f, -yaw_error);
+			// R_yaw_correction.from_euler_pry(0.0f, 0.0f, -yaw_error);
 			z_roll_pitch_sp = R_yaw_correction * z_roll_pitch_sp;
 
 			// use the formula z_roll_pitch_sp = R_tilt * [0;0;1]
@@ -2396,7 +2400,8 @@ MulticopterPositionControl::task_main()
 		 * Do not publish if offboard is enabled but position/velocity/accel control is disabled,
 		 * in this case the attitude setpoint is published by the mavlink app. Also do not publish
 		 * if the vehicle is a VTOL and it's just doing a transition (the VTOL attitude control module will generate
-		 * attitude setpoints for the transition).
+		 * attitude setpoints for the transition). lyuximin: but during the transition process, we may need the att_sp from mc or fw
+		 * lyu: so, during transition, mc still publish _att_sp
 		 */
 		if (!(_control_mode.flag_control_offboard_enabled &&
 		      !(_control_mode.flag_control_position_enabled ||
@@ -2407,6 +2412,7 @@ MulticopterPositionControl::task_main()
 				orb_publish(_attitude_setpoint_id, _att_sp_pub, &_att_sp);
 
 			} else if (_attitude_setpoint_id) {
+
 				_att_sp_pub = orb_advertise(_attitude_setpoint_id, &_att_sp);
 			}
 		}

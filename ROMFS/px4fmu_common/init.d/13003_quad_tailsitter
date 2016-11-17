@@ -13,7 +13,7 @@ sh /etc/init.d/rc.vtol_defaults
 if [ $AUTOCNF == yes ]
 then
     param set VT_MOT_COUNT 4
-    param set VT_IDLE_PWM_MC  1080
+    param set VT_IDLE_PWM_MC  1200
     param set VT_TYPE 0
     param set VT_ELEV_MC_LOCK 1
 fi
@@ -21,6 +21,7 @@ fi
 set MIXER quad_x_vtol
 
 set PWM_OUT 1234
-set PWM_MAX 2000
+set PWM_MAX 1950
+set PWM_MIN 1200
 set PWM_RATE 400
 set MAV_TYPE 20
