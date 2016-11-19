@@ -949,6 +949,7 @@ FixedwingAttitudeControl::task_main()
 
 			/* decide if in stabilized or full manual control */
 			if (_vcontrol_mode.flag_control_rates_enabled) {
+				
 				/* scale around tuning airspeed */
 				float airspeed;
 
@@ -998,6 +999,8 @@ FixedwingAttitudeControl::task_main()
 					Quatf q(Eulerf(_att_sp.roll_body, _att_sp.pitch_body, _att_sp.yaw_body));
 					q.copyTo(_att_sp.q_d);
 					_att_sp.q_d_valid = true;
+					// }
+					roll_sp = _att_sp.roll_body + _parameters.rollsp_offset_rad;
 
 					int instance;
 					orb_publish_auto(_attitude_setpoint_id, &_attitude_sp_pub, &_att_sp, &instance, ORB_PRIO_DEFAULT);
@@ -1014,6 +1017,7 @@ FixedwingAttitudeControl::task_main()
 					yaw_manual = _manual.r;
 				}
 
+					roll_sp = _att_sp.roll_body + _parameters.rollsp_offset_rad;
 				/* reset integrals where needed */
 				if (_att_sp.roll_reset_integral) {
 					_roll_ctrl.reset_integrator();
@@ -1030,6 +1034,7 @@ FixedwingAttitudeControl::task_main()
 
 				/* Reset integrators if the aircraft is on ground
 				 * or a multicopter (but not transitioning VTOL)
+					 // lyu: in the sabilization mode.
 					 // here is actually no reason -> lyuximin
 				 */
 				if (_vehicle_land_detected.landed
@@ -1071,6 +1076,7 @@ FixedwingAttitudeControl::task_main()
 				/* Run attitude controllers */
 				if (_vcontrol_mode.flag_control_attitude_enabled) {
 					if (PX4_ISFINITE(roll_sp) && PX4_ISFINITE(pitch_sp)) {
+
 						_roll_ctrl.control_attitude(control_input);
 						_pitch_ctrl.control_attitude(control_input);
 						_yaw_ctrl.control_attitude(control_input); //runs last, because is depending on output of roll and pitch attitude
@@ -1123,7 +1129,6 @@ FixedwingAttitudeControl::task_main()
 
 						if (_parameters.w_en && _att_sp.fw_control_yaw) {
 							yaw_u = _wheel_ctrl.control_bodyrate(control_input);
-
 						} else {
 							yaw_u = _yaw_ctrl.control_euler_rate(control_input);
 						}
@@ -1215,13 +1220,12 @@ FixedwingAttitudeControl::task_main()
 				}
 
 			} else {
-				/* manual/direct control */
+				/* manual/direct control, truly manual */
 				_actuators.control[actuator_controls_s::INDEX_ROLL] = _manual.y * _parameters.man_roll_scale + _parameters.trim_roll;
 				_actuators.control[actuator_controls_s::INDEX_PITCH] = -_manual.x * _parameters.man_pitch_scale +
 						_parameters.trim_pitch;
 				_actuators.control[actuator_controls_s::INDEX_YAW] = _manual.r * _parameters.man_yaw_scale + _parameters.trim_yaw;
 				_actuators.control[actuator_controls_s::INDEX_THROTTLE] = _manual.z;
-
 				// warnx("manual directly control");
 			}
 

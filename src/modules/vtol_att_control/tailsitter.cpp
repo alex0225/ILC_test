@@ -508,10 +508,11 @@ void Tailsitter::fill_actuator_outputs()
 
 	case FIXED_WING:
 		// in fixed wing mode we use engines only for providing thrust, no moments are generated
+		// lyu: in fw we also control the motor, maybe give the weight to it, i.e: speed up, scale down the motor weight, later
 		_actuators_out_0->timestamp = _actuators_fw_in->timestamp;
-		_actuators_out_0->control[actuator_controls_s::INDEX_ROLL] = 0;
-		_actuators_out_0->control[actuator_controls_s::INDEX_PITCH] = 0;
-		_actuators_out_0->control[actuator_controls_s::INDEX_YAW] = 0;
+		_actuators_out_0->control[actuator_controls_s::INDEX_ROLL] = _actuators_mc_in->control[actuator_controls_s::INDEX_ROLL];
+		_actuators_out_0->control[actuator_controls_s::INDEX_PITCH] = _actuators_mc_in->control[actuator_controls_s::INDEX_PITCH];
+		_actuators_out_0->control[actuator_controls_s::INDEX_YAW] = _actuators_mc_in->control[actuator_controls_s::INDEX_YAW];
 		_actuators_out_0->control[actuator_controls_s::INDEX_THROTTLE] =
 			_actuators_fw_in->control[actuator_controls_s::INDEX_THROTTLE];
 

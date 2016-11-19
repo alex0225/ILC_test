@@ -82,6 +82,7 @@
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/uORB.h>
+#include <vtol_att_control/vtol_type.h>
 
 /**
  * Multicopter attitude control app start / stop handling function
@@ -425,9 +426,7 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	/* performance counters */
 	_loop_perf(perf_alloc(PC_ELAPSED, "mc_att_control")),
 	_controller_latency_perf(perf_alloc_once(PC_ELAPSED, "ctrl_latency")),
-	_ts_opt_recovery(nullptr)
-
-{
+	_ts_opt_recovery(nullptr){
 	for (uint8_t i = 0; i < MAX_GYRO_COUNT; i++) {
 		_sensor_gyro_sub[i] = -1;
 	}
@@ -521,7 +520,7 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	/* fetch initial parameter values */
 	parameters_update();
 
-	if (_params.vtol_type == 0 && _params.vtol_opt_recovery_enabled) {
+	if (_params.vtol_type == vtol_type::TAILSITTER && _params.vtol_opt_recovery_enabled) {
 		// the vehicle is a tailsitter, use optimal recovery control strategy
 		_ts_opt_recovery = new TailsitterRecovery();
 	}
@@ -533,7 +532,6 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 		_sensor_correction.gyro_scale_1[i] = 1.0f;
 		_sensor_correction.gyro_scale_2[i] = 1.0f;
 	}
-
 }
 
 MulticopterAttitudeControl::~MulticopterAttitudeControl()
@@ -840,16 +838,42 @@ MulticopterAttitudeControl::control_attitude(float dt)
 {
 	vehicle_attitude_setpoint_poll();
 
-	_thrust_sp = _v_att_sp.thrust;
-
-	/* construct attitude setpoint rotation matrix */
 	math::Quaternion q_sp(_v_att_sp.q_d[0], _v_att_sp.q_d[1], _v_att_sp.q_d[2], _v_att_sp.q_d[3]);
 	math::Matrix<3, 3> R_sp = q_sp.to_dcm();
-
 	/* get current rotation matrix from control state quaternions */
 	math::Quaternion q_att(_ctrl_state.q[0], _ctrl_state.q[1], _ctrl_state.q[2], _ctrl_state.q[3]);
 	math::Matrix<3, 3> R = q_att.to_dcm();
 
+	_thrust_sp = _v_att_sp.thrust;
+	math::Matrix<3, 3> R_sp;
+
+	// if the vehicle is a tailsitter and in fw mode, we have to rotate the attitude by the pitch offset
+	// between multirotor and fixed wing body axes for att_sp, and only control mc body yaw and pitch (i.e fw body roll and pitch)
+	if ( _params.vtol_type == vtol_type::TAILSITTER && _vehicle_status.is_vtol 
+		&& !_vehicle_status.is_rotary_wing && !_vehicle_status.in_transition_mode ) {
+
+		math::Matrix<3, 3> R_offset;
+		R_offset.from_euler(0, -M_PI_2_F, 0);
+		// lyu: get current euler angle in fw body axis
+		// math::Matrix<3, 3> R_offset_tofw;
+		// R_offset_tofw.from_euler(0, M_PI_2_F, 0);
+		// math::Matrix<3, 3> R_fw = R * R_offset_tofw;
+		// math::Vector<3> euler = R_fw.to_euler();
+		// lyu: actually, the roll and yaw angles are same in fw and mc body axis. if we use Tait-Bryan: pry (zxy)
+		math::Vector<3> euler = R.to_euler();
+		// get fw att_sp ( use fw current yaw)
+		R_sp.from_euler(_v_att_sp.roll_body, _v_att_sp.pitch_body, euler(2));
+		// convert to mc body axis
+		R_sp = R_sp * R_offset;
+
+	} else {
+
+		/* construct attitude setpoint rotation matrix for mc */
+		R_sp.set(_v_att_sp.R_body);
+
+	}
+	math::Vector<3> euler_test = R_sp.to_euler();
+	// warnx("roll_sp %2.4f, pitch_sp %2.4f, yaw_sp %2.4f", (double)euler_test(0),(double)euler_test(1),(double)euler_test(2));
 	/* all input data is ready, run controller itself */
 
 	/* try to move thrust vector shortest way, because yaw response is slower than roll/pitch */
