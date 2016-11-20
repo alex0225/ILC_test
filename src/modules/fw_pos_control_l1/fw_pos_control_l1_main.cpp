@@ -1882,7 +1882,7 @@ FixedwingPositionControl::control_position(const math::Vector<2> &current_positi
 				/* populate l1 control setpoint */
 				_l1_control.navigate_waypoints(prev_wp, curr_wp, current_position, ground_speed_2d);
 
-				// lyu if manual input is given, use manual 
+				// lyu: if manual input is given, use manual 
 				if ( fabsf(_manual.y) < 0.01f ) {
 					_att_sp.roll_body = _l1_control.nav_roll();
 				} else {
