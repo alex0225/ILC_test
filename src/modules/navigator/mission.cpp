@@ -955,7 +955,7 @@ Mission::heading_sp_update()
 	    || _mission_item.nav_cmd == NAV_CMD_LAND
 	    || _mission_item.nav_cmd == NAV_CMD_VTOL_LAND
 	    || _work_item_type == WORK_ITEM_TYPE_ALIGN) {
-
+		// lyu: just return or set to current yaw?? if return, what is the yaw value?
 		return;
 	}
 

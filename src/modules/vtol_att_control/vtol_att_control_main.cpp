@@ -725,13 +725,13 @@ void VtolAttitudeControl::task_main()
 
 		mc_virtual_att_sp_poll();
 		fw_virtual_att_sp_poll();
-		vehicle_control_mode_poll();	//Check for changes in vehicle control mode.
-		vehicle_manual_poll();			//Check for changes in manual inputs.
-		arming_status_poll();			//Check for arming status updates.
-		vehicle_attitude_setpoint_poll();//Check for changes in attitude set points
-		vehicle_attitude_poll();		//Check for changes in attitude
-		actuator_controls_mc_poll();	//Check for changes in mc_attitude_control output
-		actuator_controls_fw_poll();	//Check for changes in fw_attitude_control output
+		vehicle_control_mode_poll();		//Check for changes in vehicle control mode.
+		vehicle_manual_poll();				//Check for changes in manual inputs.
+		arming_status_poll();				//Check for arming status updates.
+		vehicle_attitude_setpoint_poll();	//Check for changes in attitude set points
+		vehicle_attitude_poll();			//Check for changes in attitude
+		actuator_controls_mc_poll();		//Check for changes in mc_attitude_control output
+		actuator_controls_fw_poll();		//Check for changes in fw_attitude_control output
 		vehicle_rates_sp_mc_poll();
 		vehicle_rates_sp_fw_poll();
 		parameters_update_poll();
@@ -771,8 +771,6 @@ void VtolAttitudeControl::task_main()
 			if (fds[0].revents & POLLIN) {
 				_vtol_type->update_mc_state();
 				// warnx("roll %2.4f pitch %2.4f yaw %2.4f thrust %2.4f",(double)_v_att_sp.roll_body,(double)_v_att_sp.pitch_body,(double)_v_att_sp.yaw_body,(double)_v_att_sp.thrust);
-
-
 				fill_mc_att_rates_sp();
 			}
 

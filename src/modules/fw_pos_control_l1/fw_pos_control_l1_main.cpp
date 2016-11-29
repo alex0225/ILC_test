@@ -291,6 +291,10 @@ private:
 		float throttle_idle;
 		float throttle_cruise;
 		float throttle_slew_max;
+		float man_roll_max_rad;
+		float man_pitch_max_rad;
+		float rollsp_offset_rad;
+		float pitchsp_offset_rad;
 
 		float throttle_land_max;
 
@@ -304,7 +308,7 @@ private:
 		int land_use_terrain_estimate;
 		float land_airspeed_scale;
 		int vtol_type;
-		float man_roll_max;
+		
 
 	}		_parameters;			/**< local copies of interesting parameters */
 
@@ -343,6 +347,11 @@ private:
 		param_t throttle_idle;
 		param_t throttle_cruise;
 		param_t throttle_slew_max;
+		param_t man_roll_max_deg;
+		param_t man_pitch_max_deg;
+		param_t rollsp_offset_deg;
+		param_t pitchsp_offset_deg;
+
 
 		param_t throttle_land_max;
 
@@ -356,7 +365,7 @@ private:
 		param_t land_use_terrain_estimate;
 		param_t land_airspeed_scale;
 		param_t vtol_type;
-		param_t man_roll_max;
+		
 
 	}		_parameter_handles;		/**< handles for interesting parameters */
 
@@ -597,42 +606,47 @@ FixedwingPositionControl::FixedwingPositionControl() :
 {
 	_nav_capabilities = {};
 
-	_parameter_handles.l1_period = param_find("FW_L1_PERIOD");
+	_parameter_handles.l1_period = 	param_find("FW_L1_PERIOD");
 	_parameter_handles.l1_damping = param_find("FW_L1_DAMPING");
 
-	_parameter_handles.airspeed_min = param_find("FW_AIRSPD_MIN");
-	_parameter_handles.airspeed_trim = param_find("FW_AIRSPD_TRIM");
-	_parameter_handles.airspeed_max = param_find("FW_AIRSPD_MAX");
+	_parameter_handles.airspeed_min = 			param_find("FW_AIRSPD_MIN");
+	_parameter_handles.airspeed_trim = 			param_find("FW_AIRSPD_TRIM");
+	_parameter_handles.airspeed_max = 			param_find("FW_AIRSPD_MAX");
 
-	_parameter_handles.pitch_limit_min = param_find("FW_P_LIM_MIN");
-	_parameter_handles.pitch_limit_max = param_find("FW_P_LIM_MAX");
-	_parameter_handles.roll_limit = param_find("FW_R_LIM");
-	_parameter_handles.throttle_min = param_find("FW_THR_MIN");
-	_parameter_handles.throttle_max = param_find("FW_THR_MAX");
-	_parameter_handles.throttle_idle = param_find("FW_THR_IDLE");
-	_parameter_handles.throttle_slew_max = param_find("FW_THR_SLEW_MAX");
-	_parameter_handles.throttle_cruise = param_find("FW_THR_CRUISE");
-	_parameter_handles.throttle_land_max = param_find("FW_THR_LND_MAX");
+	_parameter_handles.pitch_limit_min = 		param_find("FW_P_LIM_MIN");
+	_parameter_handles.pitch_limit_max = 		param_find("FW_P_LIM_MAX");
+	_parameter_handles.roll_limit = 			param_find("FW_R_LIM");
+	_parameter_handles.throttle_min = 			param_find("FW_THR_MIN");
+	_parameter_handles.throttle_max = 			param_find("FW_THR_MAX");
+	_parameter_handles.throttle_idle = 			param_find("FW_THR_IDLE");
+	_parameter_handles.throttle_slew_max = 		param_find("FW_THR_SLEW_MAX");
+	_parameter_handles.man_roll_max_deg = 		param_find("FW_MAN_R_MAX");
+	_parameter_handles.man_pitch_max_deg = 		param_find("FW_MAN_P_MAX");
+	_parameter_handles.rollsp_offset_deg = 		param_find("FW_RSP_OFF");
+	_parameter_handles.pitchsp_offset_deg = 	param_find("FW_PSP_OFF");
 
-	_parameter_handles.land_slope_angle = param_find("FW_LND_ANG");
-	_parameter_handles.land_H1_virt = param_find("FW_LND_HVIRT");
-	_parameter_handles.land_flare_alt_relative = param_find("FW_LND_FLALT");
-	_parameter_handles.land_flare_pitch_min_deg = param_find("FW_LND_FL_PMIN");
-	_parameter_handles.land_flare_pitch_max_deg = param_find("FW_LND_FL_PMAX");
-	_parameter_handles.land_thrust_lim_alt_relative = param_find("FW_LND_TLALT");
+	_parameter_handles.throttle_cruise = 		param_find("FW_THR_CRUISE");
+	_parameter_handles.throttle_land_max = 		param_find("FW_THR_LND_MAX");
+
+	_parameter_handles.land_slope_angle = 				param_find("FW_LND_ANG");
+	_parameter_handles.land_H1_virt = 					param_find("FW_LND_HVIRT");
+	_parameter_handles.land_flare_alt_relative = 		param_find("FW_LND_FLALT");
+	_parameter_handles.land_flare_pitch_min_deg = 		param_find("FW_LND_FL_PMIN");
+	_parameter_handles.land_flare_pitch_max_deg = 		param_find("FW_LND_FL_PMAX");
+	_parameter_handles.land_thrust_lim_alt_relative = 	param_find("FW_LND_TLALT");
 	_parameter_handles.land_heading_hold_horizontal_distance = param_find("FW_LND_HHDIST");
-	_parameter_handles.land_use_terrain_estimate = param_find("FW_LND_USETER");
-	_parameter_handles.land_airspeed_scale = param_find("FW_LND_AIRSPD_SC");
+	_parameter_handles.land_use_terrain_estimate = 	param_find("FW_LND_USETER");
+	_parameter_handles.land_airspeed_scale = 		param_find("FW_LND_AIRSPD_SC");
 
 	_parameter_handles.time_const = 			param_find("FW_T_TIME_CONST");
-	_parameter_handles.time_const_throt = 			param_find("FW_T_THRO_CONST");
+	_parameter_handles.time_const_throt = 		param_find("FW_T_THRO_CONST");
 	_parameter_handles.min_sink_rate = 			param_find("FW_T_SINK_MIN");
 	_parameter_handles.max_sink_rate =			param_find("FW_T_SINK_MAX");
 	_parameter_handles.max_climb_rate =			param_find("FW_T_CLMB_MAX");
 	_parameter_handles.climbout_diff =			param_find("FW_CLMBOUT_DIFF");
 	_parameter_handles.throttle_damp = 			param_find("FW_T_THR_DAMP");
-	_parameter_handles.integrator_gain =			param_find("FW_T_INTEG_GAIN");
-	_parameter_handles.vertical_accel_limit =		param_find("FW_T_VERT_ACC");
+	_parameter_handles.integrator_gain =		param_find("FW_T_INTEG_GAIN");
+	_parameter_handles.vertical_accel_limit =			param_find("FW_T_VERT_ACC");
 	_parameter_handles.height_comp_filter_omega =		param_find("FW_T_HGT_OMEGA");
 	_parameter_handles.speed_comp_filter_omega =		param_find("FW_T_SPD_OMEGA");
 	_parameter_handles.roll_throttle_compensation = 	param_find("FW_T_RLL2THR");
@@ -642,7 +656,7 @@ FixedwingPositionControl::FixedwingPositionControl() :
 	_parameter_handles.heightrate_ff =			param_find("FW_T_HRATE_FF");
 	_parameter_handles.speedrate_p =			param_find("FW_T_SRATE_P");
 	_parameter_handles.vtol_type = 				param_find("VT_TYPE");
-	_parameter_handles.man_roll_max = 			param_find("FW_MAN_R_MAX");
+
 
 	/* fetch initial parameter values */
 	parameters_update();
@@ -693,6 +707,14 @@ FixedwingPositionControl::parameters_update()
 	param_get(_parameter_handles.throttle_idle, &(_parameters.throttle_idle));
 	param_get(_parameter_handles.throttle_cruise, &(_parameters.throttle_cruise));
 	param_get(_parameter_handles.throttle_slew_max, &(_parameters.throttle_slew_max));
+	param_get(_parameter_handles.man_roll_max_deg, &(_parameters.man_roll_max_rad));
+	_parameters.man_roll_max_rad = math::radians(_parameters.man_roll_max_rad);
+	param_get(_parameter_handles.man_pitch_max_deg, &_parameters.man_pitch_max_rad);
+	_parameters.man_pitch_max_rad = math::radians(_parameters.man_pitch_max_rad);
+	param_get(_parameter_handles.rollsp_offset_deg, &_parameters.rollsp_offset_rad);
+	_parameters.rollsp_offset_rad = math::radians(_parameters.rollsp_offset_rad);
+	param_get(_parameter_handles.pitchsp_offset_deg, &_parameters.pitchsp_offset_rad);
+	_parameters.pitchsp_offset_rad = math::radians(_parameters.pitchsp_offset_rad);
 
 	param_get(_parameter_handles.throttle_land_max, &(_parameters.throttle_land_max));
 
@@ -719,8 +741,7 @@ FixedwingPositionControl::parameters_update()
 	param_get(_parameter_handles.land_H1_virt, &(_parameters.land_H1_virt));
 	param_get(_parameter_handles.land_flare_alt_relative, &(_parameters.land_flare_alt_relative));
 	param_get(_parameter_handles.land_thrust_lim_alt_relative, &(_parameters.land_thrust_lim_alt_relative));
-	param_get(_parameter_handles.man_roll_max, &(_parameters.man_roll_max));
-	_parameters.man_roll_max = math::radians(_parameters.man_roll_max);
+
 
 	/* check if negative value for 2/3 of flare altitude is set for throttle cut */
 	if (_parameters.land_thrust_lim_alt_relative < 0.0f) {
@@ -1790,10 +1811,16 @@ FixedwingPositionControl::control_position(const math::Vector<2> &current_positi
 
 		if (_control_mode_current != FW_POSCTRL_MODE_POSITION) {
 			/* Need to init because last loop iteration was in a different mode */
+			// FW_POSCTRL_MODE_AUTO, FW_POSCTRL_MODE_ALTITUDE, FW_POSCTRL_MODE_OTHER
 			_hold_alt = _global_pos.alt;
 			_hdg_hold_yaw = _yaw;
 			_hdg_hold_enabled = false; // this makes sure the waypoints are reset below
 			_yaw_lock_engaged = false;
+			/* reset setpoints from other modes (auto) otherwise we won't
+			 * level out without new manual input */
+			// lyu: need this?? maybe not, only few loops thing
+			_att_sp.roll_body = _manual.y * _parameters.man_roll_max_rad;
+			_att_sp.yaw_body = 0;
 		}
 
 		/* Reset integrators if switching to this mode from a other mode in which posctl was not active */
@@ -1839,7 +1866,7 @@ FixedwingPositionControl::control_position(const math::Vector<2> &current_positi
 
 		/* heading control */
 
-		if (fabsf(_manual.y) < HDG_HOLD_MAN_INPUT_THRESH) {
+		if ( fabsf(_manual.y) < HDG_HOLD_MAN_INPUT_THRESH ) {
 			/* heading / roll is zero, lock onto current heading */
 			if (fabsf(_ctrl_state.yaw_rate) < HDG_HOLD_YAWRATE_THRESH && !_yaw_lock_engaged) {
 				// little yaw movement, lock to current heading
@@ -1882,13 +1909,7 @@ FixedwingPositionControl::control_position(const math::Vector<2> &current_positi
 				/* populate l1 control setpoint */
 				_l1_control.navigate_waypoints(prev_wp, curr_wp, current_position, ground_speed_2d);
 
-				// lyu: if manual input is given, use manual 
-				if ( fabsf(_manual.y) < 0.01f ) {
-					_att_sp.roll_body = _l1_control.nav_roll();
-				} else {
-					_att_sp.roll_body = (_manual.y * _parameters.man_roll_max);
-				}
-
+				_att_sp.roll_body = _l1_control.nav_roll();
 				_att_sp.yaw_body = _l1_control.nav_bearing();
 
 				if (in_takeoff_situation()) {
@@ -1899,9 +1920,13 @@ FixedwingPositionControl::control_position(const math::Vector<2> &current_positi
 
 			}
 
-		} else {
+		} 
+		// no heading control in position loop
+		if ( !_yaw_lock_engaged || fabsf(_manual.y) >= HDG_HOLD_MAN_INPUT_THRESH ) {
 			_hdg_hold_enabled = false;
 			_yaw_lock_engaged = false;
+			_att_sp.roll_body = _manual.y * _parameters.man_roll_max_rad;
+			_att_sp.yaw_body = 0;
 		}
 
 	} else if (_control_mode.flag_control_altitude_enabled) {
@@ -1955,7 +1980,8 @@ FixedwingPositionControl::control_position(const math::Vector<2> &current_positi
 					   tecs_status_s::TECS_MODE_NORMAL);
 		// warnx("in altitude controller pitch_sp is %2.4f", (double)_att_sp.pitch_body);
 		// lyu: also set roll_sp 
-		_att_sp.roll_body = (_manual.y * _parameters.man_roll_max);
+		_att_sp.roll_body = _manual.y * _parameters.man_roll_max_rad;
+		_att_sp.yaw_body = 0;
 
 	} else {
 		_control_mode_current = FW_POSCTRL_MODE_OTHER;
@@ -2119,7 +2145,7 @@ FixedwingPositionControl::task_main()
 
 		/* timed out - periodic check for _task_should_exit, etc. */
 		if (pret == 0) {
-			warnx(" continue, no data ");
+			//warnx(" continue, no data ");
 			continue;
 		}
 
@@ -2178,6 +2204,14 @@ FixedwingPositionControl::task_main()
 			if (control_position(current_position, ground_speed, _pos_sp_triplet)) {
 
 				_att_sp.timestamp = hrt_absolute_time();
+
+				// add attitude setpoint offsets
+				_att_sp.roll_body += _parameters.rollsp_offset_rad;
+				_att_sp.pitch_body += _parameters.pitchsp_offset_rad;
+
+				// before publish _att_sp, constrain it again for safty, temprorary use man_roll_max_rad and man_pitch_max_rad
+				_att_sp.roll_body = math::constrain(_att_sp.roll_body, -_parameters.man_roll_max_rad, _parameters.man_roll_max_rad);
+				_att_sp.pitch_body = math::constrain(_att_sp.pitch_body, -_parameters.man_pitch_max_rad, _parameters.man_pitch_max_rad);
 
 				// warnx("_attitude_setpoint_id %d", (int)_attitude_setpoint_id);
 

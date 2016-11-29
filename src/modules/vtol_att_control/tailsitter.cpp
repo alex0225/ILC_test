@@ -46,7 +46,7 @@
 #define THROTTLE_TRANSITION_MAX 0.25f	// maximum added thrust above last value in transition
 #define PITCH_TRANSITION_FRONT_P1 -1.1f	// pitch angle to switch to TRANSITION_P2
 #define PITCH_TRANSITION_FRONT_P2 -1.2f	// pitch angle to switch to FW
-#define PITCH_TRANSITION_BACK -0.25f	// pitch angle to switch to MC
+#define PITCH_TRANSITION_BACK -0.15f	// pitch angle to switch to MC
 #define PITCH_TRANSITION_ADD -0.44f		// Initial pitch angle add to transition start pitch angle (about 25 degree)
 #define ROLL_TRANSITION_MAX 0.5236f		// roll max during transition 30 degree
 
@@ -154,7 +154,7 @@ void Tailsitter::update_vtol_state()
 
 		case TRANSITION_FRONT_P1:
 			// failsafe into multicopter mode
-			// need to judge, if pitch > ? and airspeed > ?
+			// need to judge, if pitch > -? and airspeed > ? 
 			if (1){
 				_vtol_schedule.flight_mode = MC_MODE;
 			} else {
@@ -404,7 +404,7 @@ void Tailsitter::waiting_on_tecs()
 
 void Tailsitter::calc_tot_airspeed()
 {
-	// no use
+	// not used
 	float airspeed = math::max(1.0f, _airspeed->indicated_airspeed_m_s);	// prevent numerical drama
 	// calculate momentary power of one engine
 	float P = _batt_status->voltage_filtered_v * _batt_status->current_a / _params->vtol_motor_count;
@@ -423,7 +423,7 @@ void Tailsitter::calc_tot_airspeed()
 
 void Tailsitter::scale_mc_output()
 {
-	// no use
+	// not used
 	// scale around tuning airspeed
 	float airspeed;
 	calc_tot_airspeed();	// estimate air velocity seen by elevons

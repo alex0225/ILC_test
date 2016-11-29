@@ -995,12 +995,28 @@ FixedwingAttitudeControl::task_main()
 					_att_sp.pitch_body = math::constrain(_att_sp.pitch_body, -_parameters.man_pitch_max, _parameters.man_pitch_max);
 					_att_sp.yaw_body = 0.0f;
 					_att_sp.thrust = _manual.z;
+					orb_publish_auto(_attitude_setpoint_id, &_attitude_sp_pub, &_att_sp, &instance, ORB_PRIO_DEFAULT);
+				}
+
+				roll_sp = _att_sp.roll_body;
+				pitch_sp = _att_sp.pitch_body;
+				/* allow manual yaw in manual modes */
+				if (_vcontrol_mode.flag_control_manual_enabled) {
+					yaw_manual = _manual.r;
+				}
+
+				 * - manual control is disabled (another app may send the setpoint, but it should
+				 *   for sure not be set from the remote control values)
+				//     !_vcontrol_mode.flag_control_manual_enabled) {
+				// 	/* read in attitude setpoint from attitude setpoint uorb topic */
+				// 	pitch_sp = _att_sp.pitch_body + _parameters.pitchsp_offset_rad;
+				// 	yaw_sp = _att_sp.yaw_body;
+				// 	throttle_sp = _att_sp.thrust;
 
 					Quatf q(Eulerf(_att_sp.roll_body, _att_sp.pitch_body, _att_sp.yaw_body));
 					q.copyTo(_att_sp.q_d);
 					_att_sp.q_d_valid = true;
-					// }
-					roll_sp = _att_sp.roll_body + _parameters.rollsp_offset_rad;
+				// 	}
 
 					int instance;
 					orb_publish_auto(_attitude_setpoint_id, &_attitude_sp_pub, &_att_sp, &instance, ORB_PRIO_DEFAULT);
@@ -1017,15 +1033,18 @@ FixedwingAttitudeControl::task_main()
 					yaw_manual = _manual.r;
 				}
 
-					roll_sp = _att_sp.roll_body + _parameters.rollsp_offset_rad;
 				/* reset integrals where needed */
 				if (_att_sp.roll_reset_integral) {
 					_roll_ctrl.reset_integrator();
 				}
+				// 	roll_sp = _att_sp.roll_body + _parameters.rollsp_offset_rad;
+				// 	pitch_sp = _att_sp.pitch_body + _parameters.pitchsp_offset_rad;
+				// 	throttle_sp = _att_sp.thrust;
 
 				if (_att_sp.pitch_reset_integral) {
 					_pitch_ctrl.reset_integrator();
 				}
+				// 	}
 
 				if (_att_sp.yaw_reset_integral) {
 					_yaw_ctrl.reset_integrator();
@@ -1034,14 +1053,61 @@ FixedwingAttitudeControl::task_main()
 
 				/* Reset integrators if the aircraft is on ground
 				 * or a multicopter (but not transitioning VTOL)
-					 // lyu: in the sabilization mode.
 					 // here is actually no reason -> lyuximin
 				 */
 				if (_vehicle_land_detected.landed
 				    || (_vehicle_status.is_rotary_wing && !_vehicle_status.in_transition_mode)) {
-					// this is actually for ground manual test
+				// 	}
+				// 		_pitch_ctrl.reset_integrator();
 
 
+				// 	/*
+				// 	 * Scale down roll and pitch as the setpoints are radians
+				// 	 * and a typical remote can only do around 45 degrees, the mapping is
+				// 	 * -1..+1 to -man_roll_max rad..+man_roll_max rad (equivalent for pitch)
+				// 	 *
+				// 	 * With this mapping the stick angle is a 1:1 representation of
+				// 	 * the commanded attitude.
+				// 	 *
+				// 	 * The trim gets subtracted here from the manual setpoint to get
+				// 	 * the intended attitude setpoint. Later, after the rate control step the
+				// 	 * trim is added again to the control signal.
+				// 	 */
+				// 	 // lyu: in the sabilization mode.
+				// 	roll_sp = (_manual.y * _parameters.man_roll_max) + _parameters.rollsp_offset_rad;
+				// 	pitch_sp = -(_manual.x * _parameters.man_pitch_max) + _parameters.pitchsp_offset_rad;
+				// 	/* allow manual control of rudder deflection */
+				// 	yaw_manual = _manual.r;
+				// 	throttle_sp = _manual.z;
+
+				// 	/*
+				// 	 * in manual mode no external source should / does emit attitude setpoints.
+				// 	 * emit the manual setpoint here to allow attitude controller tuning
+				// 	 * in attitude control mode.
+				// 	 */
+				// 	struct vehicle_attitude_setpoint_s att_sp = {};
+				// 	att_sp.timestamp = hrt_absolute_time();
+				// 	att_sp.roll_body = roll_sp;
+				// 	att_sp.pitch_body = pitch_sp;
+				// 	att_sp.yaw_body = 0.0f - _parameters.trim_yaw;
+				// 	att_sp.thrust = throttle_sp;
+
+				// 	att_sp.roll_reset_integral = false;
+				// 	att_sp.pitch_reset_integral = false;
+				// 	att_sp.yaw_reset_integral = false;
+
+				// 	/* lazily publish the setpoint only once available */
+				// 	// this is actually for ground manual test
+				// 	if (_attitude_sp_pub != nullptr) {
+				// 			/* publish the attitude setpoint */
+				// 		orb_publish(_attitude_setpoint_id, _attitude_sp_pub, &att_sp);
+
+				// 	} else if (_attitude_setpoint_id) {
+				// 		/* advertise and publish */
+				// 		_attitude_sp_pub = orb_advertise(_attitude_setpoint_id, &att_sp);
+				// 	}
+
+				// }
 
 					_roll_ctrl.reset_integrator();
 					_pitch_ctrl.reset_integrator();

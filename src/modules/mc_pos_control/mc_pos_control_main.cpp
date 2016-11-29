@@ -1439,7 +1439,7 @@ void MulticopterPositionControl::control_auto(float dt)
 			math::Vector<3> scale = _params.pos_p.edivide(cruising_speed);
 
 			/* convert current setpoint to scaled space */
-			math::Vector<3> curr_sp_s = _curr_pos_sp.emult(scale);
+		// lyu: why scale the space?
 
 			/* by default use current setpoint as is */
 			math::Vector<3> pos_sp_s = curr_sp_s;
