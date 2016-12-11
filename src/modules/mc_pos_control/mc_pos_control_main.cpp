@@ -94,6 +94,11 @@ public:
 	~MulticopterPositionControl();
 
 	/**
+	 * Print vehicle mode status info
+	 */
+	void print_info();
+
+	/**
 	 * Start task.
 	 *
 	 * @return		OK on success.
@@ -554,7 +559,6 @@ MulticopterPositionControl::parameters_update(bool force)
 	if (updated || force) {
 		/* update C++ param system */
 		updateParams();
-
 		/* update legacy C interface params */
 		param_get(_params_handles.thr_min, &_params.thr_min);
 		param_get(_params_handles.thr_max, &_params.thr_max);
@@ -2427,6 +2431,22 @@ MulticopterPositionControl::task_main()
 	_control_task = -1;
 }
 
+void
+MulticopterPositionControl::print_info(){
+
+	warnx("flag_control_manual_enabled: %s", _control_mode.flag_control_manual_enabled ? "ture" : "false");
+	warnx("flag_control_auto_enabled: %s", _control_mode.flag_control_auto_enabled ? "ture" : "false");
+	warnx("flag_control_rates_enabled: %s", _control_mode.flag_control_rates_enabled ? "ture" : "false");
+	warnx("flag_control_attitude_enabled: %s", _control_mode.flag_control_attitude_enabled ? "ture" : "false");
+	warnx("flag_control_rattitude_enabled: %s", _control_mode.flag_control_rattitude_enabled ? "ture" : "false");
+	warnx("flag_control_altitude_enabled: %s", _control_mode.flag_control_altitude_enabled ? "ture" : "false");
+	warnx("flag_control_climb_rate_enabled: %s", _control_mode.flag_control_climb_rate_enabled ? "ture" : "false");
+	warnx("flag_control_position_enabled: %s", _control_mode.flag_control_position_enabled ? "ture" : "false");
+	warnx("flag_control_velocity_enabled: %s", _control_mode.flag_control_velocity_enabled ? "ture" : "false");
+	warnx("flag_control_acceleration_enabled: %s", _control_mode.flag_control_acceleration_enabled ? "ture" : "false");
+	warnx("flag_control_termination_enabled: %s", _control_mode.flag_control_termination_enabled ? "ture" : "false");
+}
+
 int
 MulticopterPositionControl::start()
 {
@@ -2451,7 +2471,7 @@ MulticopterPositionControl::start()
 int mc_pos_control_main(int argc, char *argv[])
 {
 	if (argc < 2) {
-		warnx("usage: mc_pos_control {start|stop|status}");
+		warnx("usage: mc_pos_control {start|stop|status|info}");
 		return 1;
 	}
 
@@ -2499,6 +2519,12 @@ int mc_pos_control_main(int argc, char *argv[])
 			warnx("not running");
 			return 1;
 		}
+	}
+
+	if (!strcmp(argv[1], "info")) {
+		warnx("Print vehicle logic status");
+		pos_control::g_control->print_info();
+		return 0;
 	}
 
 	warnx("unrecognized command");
