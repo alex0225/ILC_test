@@ -98,7 +98,7 @@ Standard::parameters_update()
 
 	/* airspeed at which we should switch to fw mode */
 	param_get(_params_handles_standard.airspeed_trans, &v);
-	_params_standard.airspeed_trans = math::constrain(v, 1.0f, 20.0f);
+	_params_standard.airspeed_trans = math::constrain(v, 1.0f, 30.0f);
 
 	/* airspeed at which we start blending mc/fw controls */
 	param_get(_params_handles_standard.airspeed_blend, &v);
@@ -434,7 +434,7 @@ void Standard::update_fw_state()
  */
 void Standard::fill_actuator_outputs()
 {
-
+	PX4_WARN("for print test");
 	if (_vtol_schedule.flight_mode == TRANSITION_TO_MC || _vtol_schedule.flight_mode == TRANSITION_TO_FW) {
 
 				/* multirotor controls */
@@ -505,7 +505,10 @@ void Standard::fill_actuator_outputs()
 	// fixed wing controls
 		_actuators_out_1->timestamp = _actuators_fw_in->timestamp;
 
-		// _actuators_out_1->control[actuator_controls_s::INDEX_THROTTLE] = _pusher_throttle;
+		/* actuator_controls_1 channel 5  used for propellor stop from navigation servo channel 1*/
+		_actuators_out_1->control[4] = _actuators_custom_in->control[1];
+		/* actuator_controls_1 channel 6  used for release cargo from navigation servo channel 0*/
+		_actuators_out_1->control[5] = _actuators_custom_in->control[0];
 
 	}
 		//roll

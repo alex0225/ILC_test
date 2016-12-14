@@ -968,7 +968,7 @@ MulticopterPositionControl::control_manual(float dt)
 
 	/* setpoint in NED frame and scaled to cruise velocity */
 	man_vel_sp = matrix::Dcmf(matrix::Eulerf(0.0f, 0.0f, yaw_input_frame)) * man_vel_sp.emult(vel_cruise_scale);
-	// R_yaw_sp.from_euler_pry(0.0f, 0.0f, _att_sp.yaw_body);
+	math::Vector<3> req_vel_sp_scaled = R_yaw_sp * req_vel_sp.emult(_params.vel_cruise); // in NED and scaled to actual velocity
 
 	/*
 	 * assisted velocity mode: user controls velocity, but if velocity is small enough, position
@@ -1080,7 +1080,6 @@ MulticopterPositionControl::control_non_manual(float dt)
 		/* offboard control */
 		control_offboard(dt);
 		_mode_auto = false;
-
 	} else {
 		_hold_offboard_xy = false;
 		_hold_offboard_z = false;

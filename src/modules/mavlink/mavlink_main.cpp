@@ -1991,6 +1991,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("ATTITUDE", 20.0f);
 		configure_stream("RC_CHANNELS", 5.0f);
 		configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
+		configure_stream("SERVO_OUTPUT_RAW_1", 1.0f);
 		configure_stream("ALTITUDE", 1.0f);
 		configure_stream("GPS_RAW_INT", 1.0f);
 		configure_stream("ADSB_VEHICLE", 2.0f);
@@ -2034,6 +2035,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("ATTITUDE_TARGET", 10.0f);
 		configure_stream("HOME_POSITION", 0.5f);
 		configure_stream("NAMED_VALUE_FLOAT", 10.0f);
+		configure_stream("SERVO_OUTPUT_RAW_1", 1.0f);
 		configure_stream("VFR_HUD", 10.0f);
 		configure_stream("WIND_COV", 10.0f);
 		configure_stream("POSITION_TARGET_LOCAL_NED", 10.0f);
@@ -2052,6 +2054,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("ATTITUDE", 25.0f);
 		configure_stream("RC_CHANNELS", 5.0f);
 		configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
+		configure_stream("SERVO_OUTPUT_RAW_1", 1.0f);
 		configure_stream("ALTITUDE", 1.0f);
 		configure_stream("GPS_RAW_INT", 1.0f);
 		configure_stream("ESTIMATOR_STATUS", 1.0f);

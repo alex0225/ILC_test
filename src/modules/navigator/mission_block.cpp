@@ -51,14 +51,19 @@
 #include <mathlib/mathlib.h>
 #include <uORB/uORB.h>
 #include <uORB/topics/actuator_controls.h>
+#include <uORB/topics/actuator_controls_custom.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vtol_vehicle_status.h>
 
+// actuator_controls_s actuators;
+actuator_controls_custom_s actuators_custom;
 
 
 MissionBlock::MissionBlock(Navigator *navigator, const char *name) :
 	NavigatorMode(navigator, name),
 	_param_loiter_min_alt(this, "MIS_LTRMIN_ALT", false),
+	// _actuator_pub(nullptr),
+	_actuator_custom_pub(nullptr),
 	_param_yaw_timeout(this, "MIS_YAW_TMT", false),
 	_param_yaw_err(this, "MIS_YAW_ERR", false),
 	_param_vtol_wv_land(this, "VT_WV_LND_EN", false),
@@ -464,15 +469,30 @@ MissionBlock::issue_command(const struct mission_item_s *item)
 		// XXX: we should issue a vehicle command and handle this somewhere else
 		_actuators = {};
 		// params[0] actuator number to be set 0..5 (corresponds to AUX outputs 1..6)
-		// params[1] new value for selected actuator in ms 900...2000
-		_actuators.control[(int)item->params[0]] = 1.0f / 2000 * -item->params[1];
-		_actuators.timestamp = hrt_absolute_time();
 
-		if (_actuator_pub != nullptr) {
-			orb_publish(ORB_ID(actuator_controls_2), _actuator_pub, &_actuators);
+		// params[1] new value for selected actuator in ms 900...2000
+		// actuators.control[(int)item->params[0]] = 1.0f / 2000 * -item->params[1];
+		// actuators.timestamp = hrt_absolute_time();
+		// if (_actuator_pub != nullptr) {
+		// 	orb_publish(ORB_ID(actuator_controls_2), _actuator_pub, &actuators);
+		// 	PX4_WARN("actuator_controls_2 channel 0 is %2.2f, 1 is %2.2f 2 is %2.2f 5 is %2.2f",(double)actuators.control[0],(double)actuators.control[1],(double)actuators.control[2],(double)actuators.control[5]);
+
+		// } else {
+		// 	_actuator_pub = orb_advertise(ORB_ID(actuator_controls_2), &actuators);
+		// }
+
+		// lyu: use actuator_controls_custom to publish the custom message
+		//memset(&actuators_custom, 0, sizeof(actuators_custom));
+		_actuators = {};
+		actuators_custom.control[(int)item->params[0]] = item->params[1];
+		actuators_custom.timestamp = hrt_absolute_time();
+
+		if (_actuator_custom_pub != nullptr) {
+			orb_publish(ORB_ID(actuator_controls_custom), _actuator_custom_pub, &actuators_custom);
+			// PX4_WARN("actuator_controls_2 channel 0 is %2.2f, 1 is %2.2f 2 is %2.2f 5 is %2.2f",(double)actuators_custom.control[0],(double)actuators_custom.control[1],(double)actuators_custom.control[2],(double)actuators_custom.control[5]);
 
 		} else {
-			_actuator_pub = orb_advertise(ORB_ID(actuator_controls_2), &_actuators);
+			_actuator_custom_pub = orb_advertise(ORB_ID(actuator_controls_custom), &actuators_custom);
 		}
 
 	} else {
