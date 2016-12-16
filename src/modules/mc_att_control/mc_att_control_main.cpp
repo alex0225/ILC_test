@@ -426,7 +426,7 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	/* performance counters */
 	_loop_perf(perf_alloc(PC_ELAPSED, "mc_att_control")),
 	_controller_latency_perf(perf_alloc_once(PC_ELAPSED, "ctrl_latency")),
-	_ts_opt_recovery(nullptr){
+	_ts_opt_recovery(nullptr)
 	for (uint8_t i = 0; i < MAX_GYRO_COUNT; i++) {
 		_sensor_gyro_sub[i] = -1;
 	}
@@ -514,8 +514,6 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	_params_handles.board_offset[0] = param_find("SENS_BOARD_X_OFF");
 	_params_handles.board_offset[1] = param_find("SENS_BOARD_Y_OFF");
 	_params_handles.board_offset[2] = param_find("SENS_BOARD_Z_OFF");
-
-
 
 	/* fetch initial parameter values */
 	parameters_update();
@@ -1302,6 +1300,12 @@ MulticopterAttitudeControl::task_main()
 				_actuators.control[7] = _v_att_sp.landing_gear;
 				_actuators.timestamp = hrt_absolute_time();
 				_actuators.timestamp_sample = _ctrl_state.timestamp;
+
+				// _actuators.control[0] = _lp_roll.apply(_actuators.control[0]);
+				// _actuators.control[1] = _lp_pitch.apply(_actuators.control[1]);
+				// _actuators.control[2] = _lp_yaw.apply(_actuators.control[2]);
+				// _actuators.control[3] = _lp_thrust.apply(_actuators.control[3]);
+
 
 				/* scale effort by battery status */
 				if (_params.bat_scale_en && _battery_status.scale > 0.0f) {

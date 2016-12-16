@@ -469,7 +469,6 @@ MissionBlock::issue_command(const struct mission_item_s *item)
 		// XXX: we should issue a vehicle command and handle this somewhere else
 		_actuators = {};
 		// params[0] actuator number to be set 0..5 (corresponds to AUX outputs 1..6)
-
 		// params[1] new value for selected actuator in ms 900...2000
 		// actuators.control[(int)item->params[0]] = 1.0f / 2000 * -item->params[1];
 		// actuators.timestamp = hrt_absolute_time();

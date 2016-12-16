@@ -434,10 +434,9 @@ void Standard::update_fw_state()
  */
 void Standard::fill_actuator_outputs()
 {
-	PX4_WARN("for print test");
 	if (_vtol_schedule.flight_mode == TRANSITION_TO_MC || _vtol_schedule.flight_mode == TRANSITION_TO_FW) {
 
-				/* multirotor controls */
+		/* multirotor controls */
 		_actuators_out_0->timestamp = _actuators_mc_in->timestamp;
 		_actuators_out_0->control[actuator_controls_s::INDEX_ROLL] = _actuators_mc_in->control[actuator_controls_s::INDEX_ROLL];	// roll
 

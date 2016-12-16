@@ -72,6 +72,7 @@
 
 #include <controllib/blocks.hpp>
 #include <controllib/block/BlockParam.hpp>
+// #include <mathlib/math/filter/LowPassFilter2p.hpp>
 
 /**
  * Multicopter position control app start / stop handling function
@@ -123,6 +124,11 @@ private:
 	int		_local_pos_sub;			/**< vehicle local position */
 	int		_pos_sp_triplet_sub;		/**< position setpoint triplet */
 	int		_home_pos_sub; 			/**< home position */
+	/* Low pass filter for attitude and thrust set_point */
+	// math::LowPassFilter2p _lp_roll_sp;
+	// math::LowPassFilter2p _lp_pitch_sp;
+	// math::LowPassFilter2p _lp_yaw_sp;
+	// math::LowPassFilter2p _lp_thrust_sp;
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
 
@@ -389,6 +395,12 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_local_pos_sub(-1),
 	_pos_sp_triplet_sub(-1),
 	_home_pos_sub(-1),
+
+	/* low pass filter */
+	// _lp_roll_sp(100.0f, 20.0f),
+	// _lp_pitch_sp(100.0f, 20.0f),
+	// _lp_yaw_sp(100.0f, 15.0f),
+	// _lp_thrust_sp(100.0f, 15.0f),
 
 	/* publications */
 	_att_sp_pub(nullptr),
@@ -2210,6 +2222,7 @@ MulticopterPositionControl::generate_attitude_setpoint(float dt)
 		q_sp.copyTo(_att_sp.q_d);
 		_att_sp.q_d_valid = true;
 	}
+
 
 	// Only switch the landing gear up if we are not landed and if
 	// the user switched from gear down to gear up.
