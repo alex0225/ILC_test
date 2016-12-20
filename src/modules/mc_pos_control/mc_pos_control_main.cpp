@@ -125,10 +125,10 @@ private:
 	int		_pos_sp_triplet_sub;		/**< position setpoint triplet */
 	int		_home_pos_sub; 			/**< home position */
 	/* Low pass filter for attitude and thrust set_point */
-	// math::LowPassFilter2p _lp_roll_sp;
-	// math::LowPassFilter2p _lp_pitch_sp;
-	// math::LowPassFilter2p _lp_yaw_sp;
-	// math::LowPassFilter2p _lp_thrust_sp;
+	math::LowPassFilter2p _lp_roll_sp;
+	math::LowPassFilter2p _lp_pitch_sp;
+	math::LowPassFilter2p _lp_yaw_sp;
+	math::LowPassFilter2p _lp_thrust_sp;
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
 
@@ -397,10 +397,10 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_home_pos_sub(-1),
 
 	/* low pass filter */
-	// _lp_roll_sp(100.0f, 20.0f),
-	// _lp_pitch_sp(100.0f, 20.0f),
-	// _lp_yaw_sp(100.0f, 15.0f),
-	// _lp_thrust_sp(100.0f, 15.0f),
+	_lp_roll_sp(100.0f, 50.0f),
+	_lp_pitch_sp(100.0f, 50.0f),
+	_lp_yaw_sp(100.0f, 40.0f),
+	_lp_thrust_sp(100.0f, 40.0f),
 
 	/* publications */
 	_att_sp_pub(nullptr),
