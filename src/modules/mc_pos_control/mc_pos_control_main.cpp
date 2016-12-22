@@ -72,7 +72,8 @@
 
 #include <controllib/blocks.hpp>
 #include <controllib/block/BlockParam.hpp>
-// #include <mathlib/math/filter/LowPassFilter2p.hpp>
+#include <mathlib/math/filter/LowPassFilter2p.hpp>
+#include <systemlib/perf_counter.h>
 
 /**
  * Multicopter position control app start / stop handling function
@@ -95,7 +96,7 @@ public:
 	~MulticopterPositionControl();
 
 	/**
-	 * Print vehicle mode status info
+	 * Print vehicle mode status info loop time and loop rate
 	 */
 	void print_info();
 
@@ -144,6 +145,9 @@ private:
 	struct position_setpoint_triplet_s		_pos_sp_triplet;	/**< vehicle global position setpoint triplet */
 	struct vehicle_local_position_setpoint_s	_local_pos_sp;		/**< vehicle local position setpoint */
 	struct home_position_s				_home_pos; 				/**< home position */
+
+	perf_counter_t	_loop_perf;			/**< loop performance counter */
+	perf_counter_t  _update_perf;			/**< loop rate */
 
 	control::BlockParamFloat _manual_thr_min; /**< minimal throttle output when flying in manual mode */
 	control::BlockParamFloat _manual_thr_max; /**< maximal throttle output when flying in manual mode */
@@ -407,6 +411,10 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_local_pos_sp_pub(nullptr),
 	_attitude_setpoint_id(nullptr),
 	_vehicle_status{},
+	/* performance counters */
+	_loop_perf(perf_alloc(PC_ELAPSED, "mc_pos_control")),
+	_update_perf(perf_alloc(PC_INTERVAL,"mc_pos_control_rate")),
+
 	_vehicle_land_detected{},
 	_ctrl_state{},
 	_att_sp{},
@@ -543,6 +551,8 @@ MulticopterPositionControl::~MulticopterPositionControl()
 	}
 
 	pos_control::g_control = nullptr;
+	perf_free(_loop_perf);
+	perf_free(_update_perf);
 }
 
 void
@@ -1561,6 +1571,9 @@ void MulticopterPositionControl::control_auto(float dt)
 
 		// Handle the landing gear based on the manual landing alt
 		const bool high_enough_for_landing_gear = (-_pos(2) + _home_pos.z > 2.0f);
+		perf_count(_update_perf);
+
+		perf_begin(_loop_perf);
 
 		// During a mission or in loiter it's safe to retract the landing gear.
 		if ((_pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_POSITION ||
@@ -2436,6 +2449,8 @@ MulticopterPositionControl::task_main()
 		/* reset altitude controller integral (hovering throttle) to manual throttle after manual throttle control */
 		_reset_int_z_manual = _control_mode.flag_armed && _control_mode.flag_control_manual_enabled
 				      && !_control_mode.flag_control_climb_rate_enabled;
+
+		perf_end(_loop_perf);
 	}
 
 	mavlink_log_info(&_mavlink_log_pub, "[mpc] stopped");
@@ -2457,6 +2472,8 @@ MulticopterPositionControl::print_info(){
 	warnx("flag_control_velocity_enabled: %s", _control_mode.flag_control_velocity_enabled ? "ture" : "false");
 	warnx("flag_control_acceleration_enabled: %s", _control_mode.flag_control_acceleration_enabled ? "ture" : "false");
 	warnx("flag_control_termination_enabled: %s", _control_mode.flag_control_termination_enabled ? "ture" : "false");
+	perf_print_counter(_loop_perf);
+	perf_print_counter(_update_perf);
 }
 
 int

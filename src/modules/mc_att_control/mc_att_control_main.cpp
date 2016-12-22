@@ -83,6 +83,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/uORB.h>
 #include <vtol_att_control/vtol_type.h>
+#include <systemlib/perf_counter.h>
 
 /**
  * Multicopter attitude control app start / stop handling function
@@ -116,6 +117,11 @@ public:
 	 * Destructor, also kills the main task
 	 */
 	~MulticopterAttitudeControl();
+
+	/**
+	 * Print vehicle mode status info loop time and loop rate
+	 */
+	void print_info();
 
 	/**
 	 * Start the multicopter attitude control task.
@@ -186,6 +192,7 @@ private:
 
 	perf_counter_t	_loop_perf;			/**< loop performance counter */
 	perf_counter_t	_controller_latency_perf;
+	perf_counter_t  _update_perf;			/**< loop rate */
 
 	math::Vector<3>		_rates_prev;	/**< angular rates on previous step */
 	math::Vector<3>		_rates_sp_prev; /**< previous rates setpoint */
@@ -426,6 +433,7 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	/* performance counters */
 	_loop_perf(perf_alloc(PC_ELAPSED, "mc_att_control")),
 	_controller_latency_perf(perf_alloc_once(PC_ELAPSED, "ctrl_latency")),
+	_update_perf(perf_alloc(PC_INTERVAL,"mc_att_control_rate")),
 	_ts_opt_recovery(nullptr)
 	for (uint8_t i = 0; i < MAX_GYRO_COUNT; i++) {
 		_sensor_gyro_sub[i] = -1;
@@ -558,6 +566,9 @@ MulticopterAttitudeControl::~MulticopterAttitudeControl()
 	}
 
 	mc_att_control::g_control = nullptr;
+	perf_free(_loop_perf);
+	perf_free(_update_perf);
+	perf_free(_controller_latency_perf);
 }
 
 int
@@ -948,7 +959,7 @@ MulticopterAttitudeControl::control_attitude(float dt)
 	// 	 * calculate angle and axis for R -> R_sp rotation directly */
 	// 	math::Quaternion q_error;
 	// 	q_error.from_dcm(R.transposed() * R_sp);
-		math::Vector<3> e_R_d = q_error(0) >= 0.0f ? q_error.imag()  * 2.0f : -q_error.imag() * 2.0f;
+	// 	math::Vector<3> e_R_d = q_error(0) >= 0.0f ? q_error.imag()  * 2.0f: -q_error.imag() * 2.0f;
 
 	// 	/* use fusion of Z axis based rotation and direct rotation */
 	// 	float direct_w = e_R_z_cos * e_R_z_cos * yaw_w;
@@ -1161,7 +1172,7 @@ MulticopterAttitudeControl::task_main()
 	poll_fds.events = POLLIN;
 
 	while (!_task_should_exit) {
-
+		perf_count(_update_perf);
 		poll_fds.fd = _sensor_gyro_sub[_selected_gyro];
 
 		/* wait for up to 100ms for data */
@@ -1301,11 +1312,6 @@ MulticopterAttitudeControl::task_main()
 				_actuators.timestamp = hrt_absolute_time();
 				_actuators.timestamp_sample = _ctrl_state.timestamp;
 
-				// _actuators.control[0] = _lp_roll.apply(_actuators.control[0]);
-				// _actuators.control[1] = _lp_pitch.apply(_actuators.control[1]);
-				// _actuators.control[2] = _lp_yaw.apply(_actuators.control[2]);
-				// _actuators.control[3] = _lp_thrust.apply(_actuators.control[3]);
-
 
 				/* scale effort by battery status */
 				if (_params.bat_scale_en && _battery_status.scale > 0.0f) {
@@ -1404,6 +1410,24 @@ MulticopterAttitudeControl::task_main()
 	_control_task = -1;
 }
 
+void
+MulticopterAttitudeControl::print_info(){
+	warnx("flag_control_manual_enabled: %s", _v_control_mode.flag_control_manual_enabled ? "ture" : "false");
+	warnx("flag_control_auto_enabled: %s", _v_control_mode.flag_control_auto_enabled ? "ture" : "false");
+	warnx("flag_control_rates_enabled: %s", _v_control_mode.flag_control_rates_enabled ? "ture" : "false");
+	warnx("flag_control_attitude_enabled: %s", _v_control_mode.flag_control_attitude_enabled ? "ture" : "false");
+	warnx("flag_control_rattitude_enabled: %s", _v_control_mode.flag_control_rattitude_enabled ? "ture" : "false");
+	warnx("flag_control_altitude_enabled: %s", _v_control_mode.flag_control_altitude_enabled ? "ture" : "false");
+	warnx("flag_control_climb_rate_enabled: %s", _v_control_mode.flag_control_climb_rate_enabled ? "ture" : "false");
+	warnx("flag_control_position_enabled: %s", _v_control_mode.flag_control_position_enabled ? "ture" : "false");
+	warnx("flag_control_velocity_enabled: %s", _v_control_mode.flag_control_velocity_enabled ? "ture" : "false");
+	warnx("flag_control_acceleration_enabled: %s", _v_control_mode.flag_control_acceleration_enabled ? "ture" : "false");
+	warnx("flag_control_termination_enabled: %s", _v_control_mode.flag_control_termination_enabled ? "ture" : "false");
+	perf_print_counter(_loop_perf);
+	perf_print_counter(_update_perf);
+}
+
+
 int
 MulticopterAttitudeControl::start()
 {
@@ -1428,7 +1452,7 @@ MulticopterAttitudeControl::start()
 int mc_att_control_main(int argc, char *argv[])
 {
 	if (argc < 2) {
-		warnx("usage: mc_att_control {start|stop|status}");
+		warnx("usage: mc_att_control {start|stop|status|info}");
 		return 1;
 	}
 
@@ -1476,6 +1500,12 @@ int mc_att_control_main(int argc, char *argv[])
 			warnx("not running");
 			return 1;
 		}
+	}
+
+	if (!strcmp(argv[1], "info")) {
+		warnx("Print vehicle logic status, loop time, loop rates");
+		mc_att_control::g_control->print_info();
+		return 0;
 	}
 
 	warnx("unrecognized command");
