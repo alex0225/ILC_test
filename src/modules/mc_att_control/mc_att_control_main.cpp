@@ -428,13 +428,13 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	_battery_status{},
 	_sensor_gyro{},
 	_sensor_correction{},
-
 	_saturation_status{},
 	/* performance counters */
 	_loop_perf(perf_alloc(PC_ELAPSED, "mc_att_control")),
 	_controller_latency_perf(perf_alloc_once(PC_ELAPSED, "ctrl_latency")),
 	_update_perf(perf_alloc(PC_INTERVAL,"mc_att_control_rate")),
 	_ts_opt_recovery(nullptr)
+{
 	for (uint8_t i = 0; i < MAX_GYRO_COUNT; i++) {
 		_sensor_gyro_sub[i] = -1;
 	}
@@ -847,14 +847,13 @@ MulticopterAttitudeControl::control_attitude(float dt)
 {
 	vehicle_attitude_setpoint_poll();
 
+	_thrust_sp = _v_att_sp.thrust;
+
 	math::Quaternion q_sp(_v_att_sp.q_d[0], _v_att_sp.q_d[1], _v_att_sp.q_d[2], _v_att_sp.q_d[3]);
 	math::Matrix<3, 3> R_sp = q_sp.to_dcm();
 	/* get current rotation matrix from control state quaternions */
 	math::Quaternion q_att(_ctrl_state.q[0], _ctrl_state.q[1], _ctrl_state.q[2], _ctrl_state.q[3]);
 	math::Matrix<3, 3> R = q_att.to_dcm();
-
-	_thrust_sp = _v_att_sp.thrust;
-	math::Matrix<3, 3> R_sp;
 
 	// if the vehicle is a tailsitter and in fw mode, we have to rotate the attitude by the pitch offset
 	// between multirotor and fixed wing body axes for att_sp, and only control mc body yaw and pitch (i.e fw body roll and pitch)
@@ -878,16 +877,9 @@ MulticopterAttitudeControl::control_attitude(float dt)
 	} else {
 
 		/* construct attitude setpoint rotation matrix for mc */
-		R_sp.set(_v_att_sp.R_body);
+		// do noting, use the original R_sp
 
 	}
-	math::Vector<3> euler_test = R_sp.to_euler();
-	// warnx("roll_sp %2.4f, pitch_sp %2.4f, yaw_sp %2.4f", (double)euler_test(0),(double)euler_test(1),(double)euler_test(2));
-	/* all input data is ready, run controller itself */
-
-	/* try to move thrust vector shortest way, because yaw response is slower than roll/pitch */
-	math::Vector<3> R_z(R(0, 2), R(1, 2), R(2, 2));
-	math::Vector<3> R_sp_z(R_sp(0, 2), R_sp(1, 2), R_sp(2, 2));
 
 	/* use quaternion with linearization */
 	math::Matrix<3, 3> e_R_M = R.transposed() * R_sp;
@@ -911,60 +903,66 @@ MulticopterAttitudeControl::control_attitude(float dt)
 
 	float yaw_w = R_sp(2, 2) * R_sp(2, 2);
 
-	/* axis and sin(angle) of desired rotation */
-	// math::Vector<3> e_R = R.transposed() * (R_z % R_sp_z);
+// /* all input data is ready, run controller itself */
 
-	/* calculate angle error */
-	// float e_R_z_sin = e_R.length();
-	// float e_R_z_cos = R_z * R_sp_z;
+// 	/* try to move thrust vector shortest way, because yaw response is slower than roll/pitch */
+// 	math::Vector<3> R_z(R(0, 2), R(1, 2), R(2, 2));
+// 	math::Vector<3> R_sp_z(R_sp(0, 2), R_sp(1, 2), R_sp(2, 2));
 
-	// /* calculate weight for yaw control */
-	// float yaw_w = R_sp(2, 2) * R_sp(2, 2);
+// 	/* axis and sin(angle) of desired rotation */
+// 	math::Vector<3> e_R = R.transposed() * (R_z % R_sp_z);
 
-	// /* calculate rotation matrix after roll/pitch only rotation */
-	// math::Matrix<3, 3> R_rp;
+// 	/* calculate angle error */
+// 	float e_R_z_sin = e_R.length();
+// 	float e_R_z_cos = R_z * R_sp_z;
 
-	// if (e_R_z_sin > 0.0f) {
-	// 	/* get axis-angle representation */
-	// 	float e_R_z_angle = atan2f(e_R_z_sin, e_R_z_cos);
-	// 	math::Vector<3> e_R_z_axis = e_R / e_R_z_sin;
+// 	/* calculate weight for yaw control */
+// 	float yaw_w = R_sp(2, 2) * R_sp(2, 2);
 
-	// 	e_R = e_R_z_axis * e_R_z_angle;
+// 	/* calculate rotation matrix after roll/pitch only rotation */
+// 	math::Matrix<3, 3> R_rp;
 
-	// 	/* cross product matrix for e_R_axis */
-	// 	math::Matrix<3, 3> e_R_cp;
-	// 	e_R_cp.zero();
-	// 	e_R_cp(0, 1) = -e_R_z_axis(2);
-	// 	e_R_cp(0, 2) = e_R_z_axis(1);
-	// 	e_R_cp(1, 0) = e_R_z_axis(2);
-	// 	e_R_cp(1, 2) = -e_R_z_axis(0);
-	// 	e_R_cp(2, 0) = -e_R_z_axis(1);
-	// 	e_R_cp(2, 1) = e_R_z_axis(0);
+// 	if (e_R_z_sin > 0.0f) {
+// 		/* get axis-angle representation */
+// 		float e_R_z_angle = atan2f(e_R_z_sin, e_R_z_cos);
+// 		math::Vector<3> e_R_z_axis = e_R / e_R_z_sin;
 
-	// 	/* rotation matrix for roll/pitch only rotation */
-	// 	R_rp = R * (_I + e_R_cp * e_R_z_sin + e_R_cp * e_R_cp * (1.0f - e_R_z_cos));
+// 		e_R = e_R_z_axis * e_R_z_angle;
 
-	// } else {
-	// 	/* zero roll/pitch rotation */
-	// 	R_rp = R;
-	// }
+// 		/* cross product matrix for e_R_axis */
+// 		math::Matrix<3, 3> e_R_cp;
+// 		e_R_cp.zero();
+// 		e_R_cp(0, 1) = -e_R_z_axis(2);
+// 		e_R_cp(0, 2) = e_R_z_axis(1);
+// 		e_R_cp(1, 0) = e_R_z_axis(2);
+// 		e_R_cp(1, 2) = -e_R_z_axis(0);
+// 		e_R_cp(2, 0) = -e_R_z_axis(1);
+// 		e_R_cp(2, 1) = e_R_z_axis(0);
 
-	// /* R_rp and R_sp has the same Z axis, calculate yaw error */
-	// math::Vector<3> R_sp_x(R_sp(0, 0), R_sp(1, 0), R_sp(2, 0));
-	// math::Vector<3> R_rp_x(R_rp(0, 0), R_rp(1, 0), R_rp(2, 0));
-	// e_R(2) = atan2f((R_rp_x % R_sp_x) * R_sp_z, R_rp_x * R_sp_x) * yaw_w;
+// 		/* rotation matrix for roll/pitch only rotation */
+// 		R_rp = R * (_I + e_R_cp * e_R_z_sin + e_R_cp * e_R_cp * (1.0f - e_R_z_cos));
 
-	// if (e_R_z_cos < 0.0f) {
-	// 	/* for large thrust vector rotations use another rotation method:
-	// 	 * calculate angle and axis for R -> R_sp rotation directly */
-	// 	math::Quaternion q_error;
-	// 	q_error.from_dcm(R.transposed() * R_sp);
-	// 	math::Vector<3> e_R_d = q_error(0) >= 0.0f ? q_error.imag()  * 2.0f: -q_error.imag() * 2.0f;
+// 	} else {
+// 		/* zero roll/pitch rotation */
+// 		R_rp = R;
+// 	}
 
-	// 	/* use fusion of Z axis based rotation and direct rotation */
-	// 	float direct_w = e_R_z_cos * e_R_z_cos * yaw_w;
-	// 	e_R = e_R * (1.0f - direct_w) + e_R_d * direct_w;
-	// }
+// 	/* R_rp and R_sp has the same Z axis, calculate yaw error */
+// 	math::Vector<3> R_sp_x(R_sp(0, 0), R_sp(1, 0), R_sp(2, 0));
+// 	math::Vector<3> R_rp_x(R_rp(0, 0), R_rp(1, 0), R_rp(2, 0));
+// 	e_R(2) = atan2f((R_rp_x % R_sp_x) * R_sp_z, R_rp_x * R_sp_x) * yaw_w;
+
+// 	if (e_R_z_cos < 0.0f) {
+// 		/* for large thrust vector rotations use another rotation method:
+// 		 * calculate angle and axis for R -> R_sp rotation directly */
+// 		math::Quaternion q_error;
+// 		q_error.from_dcm(R.transposed() * R_sp);
+// 		math::Vector<3> e_R_d = q_error(0) >= 0.0f ? q_error.imag()  * 2.0f : -q_error.imag() * 2.0f;
+
+// 		/* use fusion of Z axis based rotation and direct rotation */
+// 		float direct_w = e_R_z_cos * e_R_z_cos * yaw_w;
+// 		e_R = e_R * (1.0f - direct_w) + e_R_d * direct_w;
+// 	}
 
 	/* calculate angular rates setpoint */
 	_rates_sp = _params.att_p.emult(e_R);

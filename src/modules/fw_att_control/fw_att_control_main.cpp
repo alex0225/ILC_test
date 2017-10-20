@@ -108,8 +108,8 @@ public:
 
 private:
 
-	bool	_task_should_exit;		/**< if true, attitude control task should exit */
-	bool	_task_running;			/**< if true, task is running in its mainloop */
+	bool		_task_should_exit;		/**< if true, attitude control task should exit */
+	bool		_task_running;			/**< if true, task is running in its mainloop */
 	int		_control_task;			/**< task handle */
 
 	int		_att_sp_sub;			/**< vehicle attitude setpoint */
@@ -949,7 +949,6 @@ FixedwingAttitudeControl::task_main()
 
 			/* decide if in stabilized or full manual control */
 			if (_vcontrol_mode.flag_control_rates_enabled) {
-				
 				/* scale around tuning airspeed */
 				float airspeed;
 
@@ -995,28 +994,10 @@ FixedwingAttitudeControl::task_main()
 					_att_sp.pitch_body = math::constrain(_att_sp.pitch_body, -_parameters.man_pitch_max, _parameters.man_pitch_max);
 					_att_sp.yaw_body = 0.0f;
 					_att_sp.thrust = _manual.z;
-					orb_publish_auto(_attitude_setpoint_id, &_attitude_sp_pub, &_att_sp, &instance, ORB_PRIO_DEFAULT);
-				}
-
-				roll_sp = _att_sp.roll_body;
-				pitch_sp = _att_sp.pitch_body;
-				/* allow manual yaw in manual modes */
-				if (_vcontrol_mode.flag_control_manual_enabled) {
-					yaw_manual = _manual.r;
-				}
-
-				 * - manual control is disabled (another app may send the setpoint, but it should
-				 *   for sure not be set from the remote control values)
-				//     !_vcontrol_mode.flag_control_manual_enabled) {
-				// 	/* read in attitude setpoint from attitude setpoint uorb topic */
-				// 	pitch_sp = _att_sp.pitch_body + _parameters.pitchsp_offset_rad;
-				// 	yaw_sp = _att_sp.yaw_body;
-				// 	throttle_sp = _att_sp.thrust;
 
 					Quatf q(Eulerf(_att_sp.roll_body, _att_sp.pitch_body, _att_sp.yaw_body));
 					q.copyTo(_att_sp.q_d);
 					_att_sp.q_d_valid = true;
-				// 	}
 
 					int instance;
 					orb_publish_auto(_attitude_setpoint_id, &_attitude_sp_pub, &_att_sp, &instance, ORB_PRIO_DEFAULT);
@@ -1037,14 +1018,10 @@ FixedwingAttitudeControl::task_main()
 				if (_att_sp.roll_reset_integral) {
 					_roll_ctrl.reset_integrator();
 				}
-				// 	roll_sp = _att_sp.roll_body + _parameters.rollsp_offset_rad;
-				// 	pitch_sp = _att_sp.pitch_body + _parameters.pitchsp_offset_rad;
-				// 	throttle_sp = _att_sp.thrust;
 
 				if (_att_sp.pitch_reset_integral) {
 					_pitch_ctrl.reset_integrator();
 				}
-				// 	}
 
 				if (_att_sp.yaw_reset_integral) {
 					_yaw_ctrl.reset_integrator();
@@ -1053,70 +1030,15 @@ FixedwingAttitudeControl::task_main()
 
 				/* Reset integrators if the aircraft is on ground
 				 * or a multicopter (but not transitioning VTOL)
-					 // here is actually no reason -> lyuximin
 				 */
 				if (_vehicle_land_detected.landed
 				    || (_vehicle_status.is_rotary_wing && !_vehicle_status.in_transition_mode)) {
-				// 	}
-				// 		_pitch_ctrl.reset_integrator();
-
-
-				// 	/*
-				// 	 * Scale down roll and pitch as the setpoints are radians
-				// 	 * and a typical remote can only do around 45 degrees, the mapping is
-				// 	 * -1..+1 to -man_roll_max rad..+man_roll_max rad (equivalent for pitch)
-				// 	 *
-				// 	 * With this mapping the stick angle is a 1:1 representation of
-				// 	 * the commanded attitude.
-				// 	 *
-				// 	 * The trim gets subtracted here from the manual setpoint to get
-				// 	 * the intended attitude setpoint. Later, after the rate control step the
-				// 	 * trim is added again to the control signal.
-				// 	 */
-				// 	 // lyu: in the sabilization mode.
-				// 	roll_sp = (_manual.y * _parameters.man_roll_max) + _parameters.rollsp_offset_rad;
-				// 	pitch_sp = -(_manual.x * _parameters.man_pitch_max) + _parameters.pitchsp_offset_rad;
-				// 	/* allow manual control of rudder deflection */
-				// 	yaw_manual = _manual.r;
-				// 	throttle_sp = _manual.z;
-
-				// 	/*
-				// 	 * in manual mode no external source should / does emit attitude setpoints.
-				// 	 * emit the manual setpoint here to allow attitude controller tuning
-				// 	 * in attitude control mode.
-				// 	 */
-				// 	struct vehicle_attitude_setpoint_s att_sp = {};
-				// 	att_sp.timestamp = hrt_absolute_time();
-				// 	att_sp.roll_body = roll_sp;
-				// 	att_sp.pitch_body = pitch_sp;
-				// 	att_sp.yaw_body = 0.0f - _parameters.trim_yaw;
-				// 	att_sp.thrust = throttle_sp;
-
-				// 	att_sp.roll_reset_integral = false;
-				// 	att_sp.pitch_reset_integral = false;
-				// 	att_sp.yaw_reset_integral = false;
-
-				// 	/* lazily publish the setpoint only once available */
-				// 	// this is actually for ground manual test
-				// 	if (_attitude_sp_pub != nullptr) {
-				// 			/* publish the attitude setpoint */
-				// 		orb_publish(_attitude_setpoint_id, _attitude_sp_pub, &att_sp);
-
-				// 	} else if (_attitude_setpoint_id) {
-				// 		/* advertise and publish */
-				// 		_attitude_sp_pub = orb_advertise(_attitude_setpoint_id, &att_sp);
-				// 	}
-
-				// }
 
 					_roll_ctrl.reset_integrator();
 					_pitch_ctrl.reset_integrator();
 					_yaw_ctrl.reset_integrator();
 					_wheel_ctrl.reset_integrator();
 				}
-
-				// warnx ("in else loop");
-				// warnx("roll %2.4f pitch %2.4f yaw %2.4f thrust %2.4f",(double)_att_sp.roll_body,(double)_att_sp.pitch_body,(double)_att_sp.yaw_body,(double)_att_sp.thrust);
 
 				/* Prepare data for attitude controllers */
 				struct ECL_ControlData control_input = {};
@@ -1142,7 +1064,6 @@ FixedwingAttitudeControl::task_main()
 				/* Run attitude controllers */
 				if (_vcontrol_mode.flag_control_attitude_enabled) {
 					if (PX4_ISFINITE(roll_sp) && PX4_ISFINITE(pitch_sp)) {
-
 						_roll_ctrl.control_attitude(control_input);
 						_pitch_ctrl.control_attitude(control_input);
 						_yaw_ctrl.control_attitude(control_input); //runs last, because is depending on output of roll and pitch attitude
@@ -1195,6 +1116,7 @@ FixedwingAttitudeControl::task_main()
 
 						if (_parameters.w_en && _att_sp.fw_control_yaw) {
 							yaw_u = _wheel_ctrl.control_bodyrate(control_input);
+
 						} else {
 							yaw_u = _yaw_ctrl.control_euler_rate(control_input);
 						}
@@ -1286,13 +1208,12 @@ FixedwingAttitudeControl::task_main()
 				}
 
 			} else {
-				/* manual/direct control, truly manual */
+				/* manual/direct control */
 				_actuators.control[actuator_controls_s::INDEX_ROLL] = _manual.y * _parameters.man_roll_scale + _parameters.trim_roll;
 				_actuators.control[actuator_controls_s::INDEX_PITCH] = -_manual.x * _parameters.man_pitch_scale +
 						_parameters.trim_pitch;
 				_actuators.control[actuator_controls_s::INDEX_YAW] = _manual.r * _parameters.man_yaw_scale + _parameters.trim_yaw;
 				_actuators.control[actuator_controls_s::INDEX_THROTTLE] = _manual.z;
-				// warnx("manual directly control");
 			}
 
 			// Add feed-forward from roll control output to yaw control output
@@ -1316,7 +1237,6 @@ FixedwingAttitudeControl::task_main()
 			if (_vcontrol_mode.flag_control_rates_enabled ||
 			    _vcontrol_mode.flag_control_attitude_enabled ||
 			    _vcontrol_mode.flag_control_manual_enabled) {
-
 				/* publish the actuator controls */
 				if (_actuators_0_pub != nullptr) {
 					orb_publish(_actuators_id, _actuators_0_pub, &_actuators);

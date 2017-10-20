@@ -130,8 +130,6 @@ protected:
 	float get_time_inside(const struct mission_item_s &item);
 
 	mission_item_s _mission_item{};
-	// orb_advert_t    _actuator_pub;
-	orb_advert_t	_actuator_custom_pub;
 
 	bool _waypoint_position_reached{false};
 	bool _waypoint_yaw_reached{false};

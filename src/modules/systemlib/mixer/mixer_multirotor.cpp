@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2012-2015 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2012-2016 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file mixer_Multirotor.cpp
+ * @file mixer_multirotor.cpp
  *
  * VTOL mixers.
  */
@@ -60,7 +60,7 @@
 #include "mixer_multirotor.generated.h"
 
 #define debug(fmt, args...)	do { } while(0)
-// #define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
+//#define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
 //#include <debug.h>
 //#define debug(fmt, args...)	syslog(fmt "\n", ##args)
 
@@ -68,11 +68,6 @@
  * Clockwise: 1
  * Counter-clockwise: -1
  */
-
-float min(float val1, float val2)
-{
-	return (val1 < val2) ? val1 : val2;
-}
 
 MultirotorMixer::MultirotorMixer(ControlCallback control_cb,
 				 uintptr_t cb_handle,

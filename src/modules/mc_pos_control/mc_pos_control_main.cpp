@@ -72,7 +72,6 @@
 
 #include <controllib/blocks.hpp>
 #include <controllib/block/BlockParam.hpp>
-#include <mathlib/math/filter/LowPassFilter2p.hpp>
 #include <systemlib/perf_counter.h>
 
 /**
@@ -125,11 +124,7 @@ private:
 	int		_local_pos_sub;			/**< vehicle local position */
 	int		_pos_sp_triplet_sub;		/**< position setpoint triplet */
 	int		_home_pos_sub; 			/**< home position */
-	/* Low pass filter for attitude and thrust set_point */
-	math::LowPassFilter2p _lp_roll_sp;
-	math::LowPassFilter2p _lp_pitch_sp;
-	math::LowPassFilter2p _lp_yaw_sp;
-	math::LowPassFilter2p _lp_thrust_sp;
+
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
 
@@ -399,22 +394,11 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_local_pos_sub(-1),
 	_pos_sp_triplet_sub(-1),
 	_home_pos_sub(-1),
-
-	/* low pass filter */
-	_lp_roll_sp(100.0f, 50.0f),
-	_lp_pitch_sp(100.0f, 50.0f),
-	_lp_yaw_sp(100.0f, 40.0f),
-	_lp_thrust_sp(100.0f, 40.0f),
-
 	/* publications */
 	_att_sp_pub(nullptr),
 	_local_pos_sp_pub(nullptr),
 	_attitude_setpoint_id(nullptr),
 	_vehicle_status{},
-	/* performance counters */
-	_loop_perf(perf_alloc(PC_ELAPSED, "mc_pos_control")),
-	_update_perf(perf_alloc(PC_INTERVAL,"mc_pos_control_rate")),
-
 	_vehicle_land_detected{},
 	_ctrl_state{},
 	_att_sp{},
@@ -424,6 +408,10 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_pos_sp_triplet{},
 	_local_pos_sp{},
 	_home_pos{},
+	/* performance counters */
+	_loop_perf(perf_alloc(PC_ELAPSED, "mc_pos_control")),
+	_update_perf(perf_alloc(PC_INTERVAL,"mc_pos_control_rate")),
+
 	_manual_thr_min(this, "MANTHR_MIN"),
 	_manual_thr_max(this, "MANTHR_MAX"),
 	_xy_vel_man_expo(this, "XY_MAN_EXPO"),
@@ -551,6 +539,7 @@ MulticopterPositionControl::~MulticopterPositionControl()
 	}
 
 	pos_control::g_control = nullptr;
+
 	perf_free(_loop_perf);
 	perf_free(_update_perf);
 }
@@ -990,7 +979,6 @@ MulticopterPositionControl::control_manual(float dt)
 
 	/* setpoint in NED frame and scaled to cruise velocity */
 	man_vel_sp = matrix::Dcmf(matrix::Eulerf(0.0f, 0.0f, yaw_input_frame)) * man_vel_sp.emult(vel_cruise_scale);
-	math::Vector<3> req_vel_sp_scaled = R_yaw_sp * req_vel_sp.emult(_params.vel_cruise); // in NED and scaled to actual velocity
 
 	/*
 	 * assisted velocity mode: user controls velocity, but if velocity is small enough, position
@@ -1459,9 +1447,10 @@ void MulticopterPositionControl::control_auto(float dt)
 
 			math::Vector<3> scale = _params.pos_p.edivide(cruising_speed);
 
+			// lyu: why scale the space?
 			/* convert current setpoint to scaled space */
-		// lyu: why scale the space?
-
+			math::Vector<3> curr_sp_s = _curr_pos_sp.emult(scale);
+			
 			/* by default use current setpoint as is */
 			math::Vector<3> pos_sp_s = curr_sp_s;
 
@@ -1571,9 +1560,6 @@ void MulticopterPositionControl::control_auto(float dt)
 
 		// Handle the landing gear based on the manual landing alt
 		const bool high_enough_for_landing_gear = (-_pos(2) + _home_pos.z > 2.0f);
-		perf_count(_update_perf);
-
-		perf_begin(_loop_perf);
 
 		// During a mission or in loiter it's safe to retract the landing gear.
 		if ((_pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_POSITION ||
@@ -2293,6 +2279,7 @@ MulticopterPositionControl::task_main()
 	fds[0].events = POLLIN;
 
 	while (!_task_should_exit) {
+		perf_count(_update_perf);
 		/* wait for up to 20ms for data */
 		int pret = px4_poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 20);
 
@@ -2306,9 +2293,9 @@ MulticopterPositionControl::task_main()
 			warn("poll error %d, %d", pret, errno);
 			continue;
 		}
-
+		
+		perf_begin(_loop_perf);
 		poll_subscriptions();
-
 		parameters_update(false);
 
 		hrt_abstime t = hrt_absolute_time();

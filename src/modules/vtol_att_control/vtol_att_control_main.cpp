@@ -107,7 +107,6 @@ VtolAttitudeControl::VtolAttitudeControl() :
 	memset(&_actuators_out_1, 0, sizeof(_actuators_out_1));
 	memset(&_actuators_mc_in, 0, sizeof(_actuators_mc_in));
 	memset(&_actuators_fw_in, 0, sizeof(_actuators_fw_in));
-	memset(&_actuators_custom_in, 0, sizeof(_actuators_custom_in));
 	memset(&_armed, 0, sizeof(_armed));
 	memset(&_local_pos, 0, sizeof(_local_pos));
 	memset(&_airspeed, 0, sizeof(_airspeed));
@@ -253,19 +252,6 @@ void VtolAttitudeControl::actuator_controls_fw_poll()
 
 	if (updated) {
 		orb_copy(ORB_ID(actuator_controls_virtual_fw), _actuator_inputs_fw, &_actuators_fw_in);
-	}
-}
-
-/**
-* Check for inputs from gimbal.
-*/
-void VtolAttitudeControl::actuator_controls_custom_poll()
-{
-	bool updated;
-	orb_check(_actuator_controls_custom_sub, &updated);
-
-	if (updated) {
-		orb_copy(ORB_ID(actuator_controls_custom), _actuator_controls_custom_sub , &_actuators_custom_in);
 	}
 }
 
@@ -670,7 +656,6 @@ void VtolAttitudeControl::task_main()
 	_tecs_status_sub = orb_subscribe(ORB_ID(tecs_status));
 	_land_detected_sub = orb_subscribe(ORB_ID(vehicle_land_detected));
 
-	_actuator_controls_custom_sub = orb_subscribe(ORB_ID(actuator_controls_custom));
 	_actuator_inputs_mc    = orb_subscribe(ORB_ID(actuator_controls_virtual_mc));
 	_actuator_inputs_fw    = orb_subscribe(ORB_ID(actuator_controls_virtual_fw));
 
@@ -747,7 +732,6 @@ void VtolAttitudeControl::task_main()
 		vehicle_attitude_poll();			//Check for changes in attitude
 		actuator_controls_mc_poll();		//Check for changes in mc_attitude_control output
 		actuator_controls_fw_poll();		//Check for changes in fw_attitude_control output
-		actuator_controls_custom_poll();	//Check for changes in actuator_controls_2 output
 
 		vehicle_rates_sp_mc_poll();
 		vehicle_rates_sp_fw_poll();

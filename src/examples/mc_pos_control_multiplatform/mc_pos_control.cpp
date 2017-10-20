@@ -114,7 +114,7 @@ MulticopterPositionControlMultiplatform::MulticopterPositionControlMultiplatform
 	_pos_sp_triplet = _n.subscribe<px4_position_setpoint_triplet>
 			  (&MulticopterPositionControlMultiplatform::handle_position_setpoint_triplet, this, 0);
 	_local_pos_sp = _n.subscribe<px4_vehicle_local_position_setpoint>(0);
-	_global_vel_sp = _n.subscribe<px4_vehicle_global_velocity_setpoint>(0);
+	// _global_vel_sp = _n.subscribe<px4_vehicle_global_velocity_setpoint>(0);
 
 
 	_params.pos_p.zero();
