@@ -46,7 +46,7 @@
 #define THROTTLE_TRANSITION_MAX 0.25f	// maximum added thrust above last value in transition
 #define PITCH_TRANSITION_FRONT_P1 -1.1f	// pitch angle to switch to TRANSITION_P2
 #define PITCH_TRANSITION_FRONT_P2 -1.2f	// pitch angle to switch to FW
-#define PITCH_TRANSITION_BACK -0.15f	// pitch angle to switch to MC
+#define PITCH_TRANSITION_BACK -0.25f	// pitch angle to switch to MC
 #define PITCH_TRANSITION_ADD -0.44f		// Initial pitch angle add to transition start pitch angle (about 25 degree)
 #define ROLL_TRANSITION_MAX 0.5236f		// roll max during transition 30 degree
 
@@ -507,7 +507,6 @@ void Tailsitter::fill_actuator_outputs()
 		break;
 
 	case FIXED_WING:
-		// in fixed wing mode we use engines only for providing thrust, no moments are generated
 		// lyu: in fw we also control the motor, maybe give the weight to it, i.e: speed up, scale down the motor weight, later
 		_actuators_out_0->timestamp = _actuators_fw_in->timestamp;
 		_actuators_out_0->control[actuator_controls_s::INDEX_ROLL] = _actuators_mc_in->control[actuator_controls_s::INDEX_ROLL];
@@ -557,17 +556,18 @@ void Tailsitter::fill_actuator_outputs()
 			_actuators_out_0->timestamp = _actuators_mc_in->timestamp;
 			_actuators_out_1->timestamp = _actuators_mc_in->timestamp;
 
-			_actuators_out_0->control[actuator_controls_s::INDEX_ROLL] = _actuators_mc_in->control[actuator_controls_s::INDEX_ROLL]
-					* 1.0f;
+			_actuators_out_0->control[actuator_controls_s::INDEX_ROLL] = 
+				_actuators_mc_in->control[actuator_controls_s::INDEX_ROLL] * 1.0f;
 			_actuators_out_0->control[actuator_controls_s::INDEX_PITCH] =
 				_actuators_mc_in->control[actuator_controls_s::INDEX_PITCH] * 1.0f;
-			_actuators_out_0->control[actuator_controls_s::INDEX_YAW] = _actuators_mc_in->control[actuator_controls_s::INDEX_YAW] *
-					_mc_yaw_weight;
-			_actuators_out_0->control[actuator_controls_s::INDEX_THROTTLE] = _actuators_mc_in->control[actuator_controls_s::INDEX_THROTTLE];
+			_actuators_out_0->control[actuator_controls_s::INDEX_YAW] = 
+				_actuators_mc_in->control[actuator_controls_s::INDEX_YAW] *	_mc_yaw_weight;
+			_actuators_out_0->control[actuator_controls_s::INDEX_THROTTLE] = 
+				_actuators_mc_in->control[actuator_controls_s::INDEX_THROTTLE];
 
 			// NOTE: There is no mistake in the line below, multicopter yaw axis is controlled by elevon roll actuation!
-			_actuators_out_1->control[actuator_controls_s::INDEX_ROLL] = -_actuators_fw_in->control[actuator_controls_s::INDEX_ROLL]
-					* (1 - _mc_roll_weight);
+			_actuators_out_1->control[actuator_controls_s::INDEX_ROLL] = 
+				-_actuators_fw_in->control[actuator_controls_s::INDEX_ROLL]	* (1 - _mc_roll_weight);
 			_actuators_out_1->control[actuator_controls_s::INDEX_PITCH] =
 				_actuators_mc_in->control[actuator_controls_s::INDEX_PITCH] * _mc_pitch_weight;
 			// **LATER** + (_actuators_fw_in->control[actuator_controls_s::INDEX_PITCH] + _params->fw_pitch_trim) *(1 - _mc_pitch_weight);
