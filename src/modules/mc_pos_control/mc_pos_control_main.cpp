@@ -112,7 +112,7 @@ public:
 private:
 	bool		_task_should_exit;		/**< if true, task should exit */
 	bool		_gear_state_initialized;	///< true if the gear state has been initialized
-	int		_control_task;			/**< task handle for task */
+	int			_control_task;			/**< task handle for task */
 	orb_advert_t	_mavlink_log_pub;		/**< mavlink log advert */
 
 	int		_vehicle_status_sub;		/**< vehicle status subscription */
@@ -124,7 +124,6 @@ private:
 	int		_local_pos_sub;			/**< vehicle local position */
 	int		_pos_sp_triplet_sub;		/**< position setpoint triplet */
 	int		_home_pos_sub; 			/**< home position */
-
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
 
@@ -1447,7 +1446,6 @@ void MulticopterPositionControl::control_auto(float dt)
 
 			math::Vector<3> scale = _params.pos_p.edivide(cruising_speed);
 
-			// lyu: why scale the space?
 			/* convert current setpoint to scaled space */
 			math::Vector<3> curr_sp_s = _curr_pos_sp.emult(scale);
 			

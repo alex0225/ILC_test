@@ -512,7 +512,7 @@ void Tiltrotor::set_rear_motor_state(rear_motor_state state, int value)
 	ret = px4_ioctl(fd, PWM_SERVO_SET_MAX_PWM, (long unsigned int)&pwm_max_values);
 
 	if (ret != OK) {
-		PX4_WARN("failed setting max values");
+		PX4_WARN("failed setting2 max values");
 	}
 
 	px4_close(fd);

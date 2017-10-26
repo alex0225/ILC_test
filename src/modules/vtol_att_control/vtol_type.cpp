@@ -106,7 +106,7 @@ void VtolType::set_idle_mc()
 	ret = px4_ioctl(fd, PWM_SERVO_SET_MIN_PWM, (long unsigned int)&pwm_values);
 
 	if (ret != OK) {
-		PX4_WARN("failed setting min values");
+		PX4_WARN("failed setting3 min values");
 	}
 
 	px4_close(fd);
@@ -139,7 +139,7 @@ void VtolType::set_idle_fw()
 	int ret = px4_ioctl(fd, PWM_SERVO_SET_MIN_PWM, (long unsigned int)&pwm_values);
 
 	if (ret != OK) {
-		PX4_WARN("failed setting min values");
+		PX4_WARN("failed setting4 min values");
 	}
 
 	px4_close(fd);

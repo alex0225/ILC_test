@@ -2626,7 +2626,7 @@ PARAM_DEFINE_INT32(RC_MAP_ARM_SW, 0);
 PARAM_DEFINE_INT32(RC_MAP_FLAPS, 0);
 
 /**
- * VTOL transition switch channel mapping
+ * VTOL transition switch
  *
  * @min 0
  * @max 18

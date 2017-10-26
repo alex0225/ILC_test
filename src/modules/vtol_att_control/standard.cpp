@@ -151,6 +151,7 @@ void Standard::update_vtol_state()
 			// transition to mc mode
 			if (_vtol_vehicle_status->vtol_transition_failsafe == true) {
 				// Failsafe event, engage mc motors immediately
+				// lyu: should do sth? hard transition from fw to mc is robust enough? 
 				_vtol_schedule.flight_mode = MC_MODE;
 				_flag_enable_mc_motors = true;
 
@@ -163,6 +164,7 @@ void Standard::update_vtol_state()
 
 		} else if (_vtol_schedule.flight_mode == TRANSITION_TO_FW) {
 			// failsafe back to mc mode
+			// lyu: should check the speed if too big need use TRANSITION_TO_MC
 			_vtol_schedule.flight_mode = MC_MODE;
 			_mc_roll_weight = 1.0f;
 			_mc_pitch_weight = 1.0f;
@@ -179,7 +181,14 @@ void Standard::update_vtol_state()
 		}
 
 		// the pusher motor should never be powered when in or transitioning to mc mode
-		_pusher_throttle = 0.0f;
+		// lyu: if we use the pusher_throttle to provide extra forward speed, _pusher_throttle should not be 0
+		if (_params_standard.forward_thrust_scale < FLT_EPSILON ||
+		    !_v_control_mode->flag_control_position_enabled) {
+			_pusher_throttle = 0.0f;
+		} else {
+			// lyu: do nothing
+		}
+		// _pusher_throttle = 0.0f;
 
 	} else {
 		// the transition to fw mode switch is on
@@ -200,6 +209,7 @@ void Standard::update_vtol_state()
 
 		} else if (_vtol_schedule.flight_mode == TRANSITION_TO_FW) {
 			// continue the transition to fw mode while monitoring airspeed for a final switch to fw mode
+			// lyu: here, should we cancel the time? if airspeed disable,use time, if airspeed enable,use airspeed msg
 			if (((_params_standard.airspeed_mode == control_state_s::AIRSPD_MODE_DISABLED ||
 			      _airspeed->indicated_airspeed_m_s >= _params_standard.airspeed_trans) &&
 			     (float)hrt_elapsed_time(&_vtol_schedule.transition_start)
@@ -273,6 +283,7 @@ void Standard::update_transition_state()
 			   (float)hrt_elapsed_time(&_vtol_schedule.transition_start) > ((_params_standard.front_trans_time_min / 2.0f) *
 					   1000000.0f)
 			  ) {
+			// lyu:if the front_trans_time_min is too small the time based blending will be aggressive, do sth here
 			float weight = 1.0f - ((float)(hrt_elapsed_time(&_vtol_schedule.transition_start) - ((
 							       _params_standard.front_trans_time_min / 2.0f) * 1000000.0f)) /
 					       ((_params_standard.front_trans_time_min / 2.0f) * 1000000.0f));
@@ -309,12 +320,14 @@ void Standard::update_transition_state()
 	} else if (_vtol_schedule.flight_mode == TRANSITION_TO_MC) {
 
 		// maintain FW_PSP_OFF
+		// lyu: transition back, the pitch_sp is important
 		_v_att_sp->pitch_body = _params_standard.pitch_setpoint_offset;
 		matrix::Quatf q_sp(matrix::Eulerf(_v_att_sp->roll_body, _v_att_sp->pitch_body, _v_att_sp->yaw_body));
 		q_sp.copyTo(_v_att_sp->q_d);
 		_v_att_sp->q_d_valid = true;
 
 		// continually increase mc attitude control as we transition back to mc mode
+		// lyu: need use the airspeed to adjust the weight and if airspeed is not available, need another strategy
 		if (_params_standard.back_trans_dur > FLT_EPSILON) {
 			float weight = (float)hrt_elapsed_time(&_vtol_schedule.transition_start) /
 				       ((_params_standard.back_trans_dur / 2) * 1000000.0f);
@@ -382,6 +395,7 @@ void Standard::update_mc_state()
 	// this value corresponds to the amount the vehicle would try to pitch forward
 	float pitch_forward = atan2f(body_z_sp(0), body_z_sp(2));
 
+
 	// only allow pitching forward up to threshold, the rest of the desired
 	// forward acceleration will be compensated by the pusher
 	if (pitch_forward < -_params_standard.down_pitch_max) {
@@ -436,15 +450,12 @@ void Standard::fill_actuator_outputs()
 {
 
 	if (_vtol_schedule.flight_mode == TRANSITION_TO_MC || _vtol_schedule.flight_mode == TRANSITION_TO_FW) {
-
+		// in transition, both control surface and rotors have full weight
 		/* multirotor controls */
 		_actuators_out_0->timestamp = _actuators_mc_in->timestamp;
 		_actuators_out_0->control[actuator_controls_s::INDEX_ROLL] = _actuators_mc_in->control[actuator_controls_s::INDEX_ROLL];	// roll
-
 		_actuators_out_0->control[actuator_controls_s::INDEX_PITCH] = _actuators_mc_in->control[actuator_controls_s::INDEX_PITCH];	// pitch
-
 		_actuators_out_0->control[actuator_controls_s::INDEX_YAW] = _actuators_mc_in->control[actuator_controls_s::INDEX_YAW];	// yaw
-
 		_actuators_out_0->control[actuator_controls_s::INDEX_THROTTLE] = _actuators_mc_in->control[actuator_controls_s::INDEX_THROTTLE];// throttle
 
 		/* fixed wing controls */
@@ -457,26 +468,23 @@ void Standard::fill_actuator_outputs()
 
 		/* multirotor controls */
 		_actuators_out_0->timestamp = _actuators_mc_in->timestamp;
-		_actuators_out_0->control[actuator_controls_s::INDEX_ROLL] = _actuators_mc_in->control[actuator_controls_s::INDEX_ROLL]
-				* _mc_roll_weight;	// roll
-
+		_actuators_out_0->control[actuator_controls_s::INDEX_ROLL] = 
+			_actuators_mc_in->control[actuator_controls_s::INDEX_ROLL] * _mc_roll_weight;	// roll
 		_actuators_out_0->control[actuator_controls_s::INDEX_PITCH] =
 			_actuators_mc_in->control[actuator_controls_s::INDEX_PITCH] * _mc_pitch_weight;	// pitch
-
-
-		_actuators_out_0->control[actuator_controls_s::INDEX_YAW] = _actuators_mc_in->control[actuator_controls_s::INDEX_YAW] *
-				_mc_yaw_weight;	// yaw
+		_actuators_out_0->control[actuator_controls_s::INDEX_YAW] = 
+			_actuators_mc_in->control[actuator_controls_s::INDEX_YAW] *	_mc_yaw_weight;	// yaw
 		_actuators_out_0->control[actuator_controls_s::INDEX_THROTTLE] =
-			_actuators_mc_in->control[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;	// throttle lyuximin: maybe don't use weight?? should try later!!
+			_actuators_mc_in->control[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight; // throttle lyuximin: maybe don't use weight?? should try later!!
 
 		/* fixed wing controls */
 		_actuators_out_1->timestamp = _actuators_fw_in->timestamp;
-		_actuators_out_1->control[actuator_controls_s::INDEX_ROLL] = -_actuators_fw_in->control[actuator_controls_s::INDEX_ROLL]
-				* (1 - _mc_roll_weight);	//roll
+		_actuators_out_1->control[actuator_controls_s::INDEX_ROLL] =
+			-_actuators_fw_in->control[actuator_controls_s::INDEX_ROLL] * (1 - _mc_roll_weight);	//roll
 		_actuators_out_1->control[actuator_controls_s::INDEX_PITCH] =
 			_actuators_fw_in->control[actuator_controls_s::INDEX_PITCH] * (1 - _mc_pitch_weight) + _params->fw_pitch_trim;	//pitch
-		_actuators_out_1->control[actuator_controls_s::INDEX_YAW] = _actuators_fw_in->control[actuator_controls_s::INDEX_YAW]
-				* (1 - _mc_yaw_weight);	// yaw
+		_actuators_out_1->control[actuator_controls_s::INDEX_YAW] =
+			_actuators_fw_in->control[actuator_controls_s::INDEX_YAW] * (1 - _mc_yaw_weight);	// yaw
 
 		// /* actuator_controls_1 channel 5  used for propellor stop from navigation servo channel 1*/
 		// _actuators_out_1->control[4] = _actuators_custom_in->control[1];
@@ -493,6 +501,7 @@ void Standard::fill_actuator_outputs()
 	} else {
 		// otherwise we may be ramping up the throttle during the transition to fw mode
 		_actuators_out_1->control[actuator_controls_s::INDEX_THROTTLE] = _pusher_throttle;
+		// PX4_WARN("throttle %f", (double)_pusher_throttle);
 	}
 }
 
@@ -530,7 +539,7 @@ Standard::set_max_mc(unsigned pwm_value)
 	ret = px4_ioctl(fd, PWM_SERVO_SET_MAX_PWM, (long unsigned int)&pwm_values);
 
 	if (ret != OK) {
-		PX4_WARN("failed setting max values");
+		PX4_WARN("failed setting1 max values");
 	}
 
 	px4_close(fd);
