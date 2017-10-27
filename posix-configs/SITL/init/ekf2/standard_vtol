@@ -34,6 +34,8 @@ param set MC_ROLLRATE_P 0.15
 param set MIS_LTRMIN_ALT 10
 param set MIS_TAKEOFF_ALT 2.5
 param set MIS_YAW_TMT 10
+param set MPC_TILTMAX_AIR 20
+param set MPC_XY_CRUISE 12
 param set MPC_ACC_HOR_MAX 1.0
 param set MPC_TKO_SPEED 1.0
 param set MPC_XY_P 0.8
@@ -58,8 +60,8 @@ param set SYS_RESTART_TYPE 2
 param set VT_ARSP_TRANS 15
 param set VT_MOT_COUNT 4
 param set VT_TRANS_THR 0.75
-param set VT_FWD_THRUST_SC 1
-param set VT_DWN_PITCH_MAX 15
+param set VT_FWD_THRUST_SC 6
+param set VT_DWN_PITCH_MAX 8
 param set VT_TYPE 2
 
 replay tryapplyparams

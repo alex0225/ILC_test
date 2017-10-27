@@ -559,6 +559,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 
 		if (_navigator->get_vstatus()->is_vtol && _param_vtol_wv_takeoff.get()) {
 			sp->disable_mc_yaw_control = true;
+			// PX4_WARN("WEATHER-VANE MODE take off");
 		}
 
 		break;
@@ -569,6 +570,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 
 		if (_navigator->get_vstatus()->is_vtol && _param_vtol_wv_land.get()) {
 			sp->disable_mc_yaw_control = true;
+			// PX4_WARN("WEATHER-VANE MODE land");
 		}
 
 		break;
@@ -591,6 +593,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 
 		if (_navigator->get_vstatus()->is_vtol && _param_vtol_wv_loiter.get()) {
 			sp->disable_mc_yaw_control = true;
+			// PX4_WARN("WEATHER-VANE MODE loiter");
 		}
 
 		break;

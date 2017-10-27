@@ -988,6 +988,7 @@ MulticopterAttitudeControl::control_attitude(float dt)
 		_rates_sp(2) = math::constrain(_rates_sp(2), -wv_yaw_rate_max, wv_yaw_rate_max);
 		// prevent integrator winding up in weathervane mode
 		_rates_int(2) = 0.0f;
+		// PX4_WARN("WEATHER-VANE MODE");
 	}
 }
 
@@ -1112,9 +1113,17 @@ MulticopterAttitudeControl::control_attitude_rates(float dt)
 			// Perform the integration using a first order method and do not propaate the result if out of range or invalid
 			float rate_i = _rates_int(i) + _params.rate_i(i) * rates_err(i) * dt;
 
+			// lyu: do sth to combined, if yaw saturate turn off the integral term
+			bool yaw_saturation = ((i == AXIS_INDEX_YAW) && _saturation_status.flags.yaw_pos) ||
+				((i == AXIS_INDEX_YAW) && _saturation_status.flags.yaw_neg);
+			if (yaw_saturation && _params.vtol_type == vtol_type::STANDARD) {
+				rate_i = 0.0f;
+				// PX4_WARN("integrator set to zero in combined");
+			}
+
 			if (PX4_ISFINITE(rate_i) && rate_i > -_params.rate_int_lim(i) && rate_i < _params.rate_int_lim(i)) {
 				_rates_int(i) = rate_i;
-
+				// PX4_WARN("yaw_saturation %d, positive_saturation %d, negative_saturation %d",yaw_saturation,positive_saturation,negative_saturation);
 			}
 		}
 	}
