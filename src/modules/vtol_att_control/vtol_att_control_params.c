@@ -305,7 +305,7 @@ PARAM_DEFINE_FLOAT(VT_TRANS_MIN_TM, 2.0f);
  * @max 200.0
  * @group VTOL Attitude Control
  */
-PARAM_DEFINE_FLOAT(VT_FW_MIN_ALT, 0.0f);
+PARAM_DEFINE_FLOAT(VT_FW_MIN_ALT, 15.0f);
 
 
 /**

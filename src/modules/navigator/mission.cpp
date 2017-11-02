@@ -701,7 +701,9 @@ Mission::set_mission_items()
 			_mission_item.nav_cmd = NAV_CMD_WAYPOINT;
 			_mission_item.autocontinue = true;
 			_mission_item.time_inside = 0.0f;
-			_mission_item.disable_mc_yaw = true;
+			// _mission_item.disable_mc_yaw = true;
+			// lyu: 
+			_mission_item.disable_mc_yaw = false;
 		}
 
 		/* we just moved to the landing waypoint, now descend */

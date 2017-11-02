@@ -57,15 +57,13 @@ then
 	param set FW_RR_P 0.05
 	param set FW_THR_CRUISE 0.75
 
-	param set VT_MOT_COUNT 4
-	param set VT_IDLE_PWM_MC 1230
-	param set VT_TYPE 2
+	param set VT_IDLE_PWM_MC 1100
 fi
 
 set MIXER vtol_quad_x
 set PWM_OUT 1234
 set PWM_RATE 400
-set PWM_MIN 1230
+set PWM_MIN 1100
 
 set MIXER_AUX vtol_AAERT
 set PWM_ACHDIS 5

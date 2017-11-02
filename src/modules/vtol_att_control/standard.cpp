@@ -72,6 +72,7 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_params_handles_standard.forward_thrust_scale = param_find("VT_FWD_THRUST_SC");
 	_params_handles_standard.airspeed_mode = param_find("FW_ARSP_MODE");
 	_params_handles_standard.pitch_setpoint_offset = param_find("FW_PSP_OFF");
+	_params_handles_standard.xy_cruise = param_find("MPC_XY_CRUISE");
 }
 
 Standard::~Standard()
@@ -127,6 +128,10 @@ Standard::parameters_update()
 	param_get(_params_handles_standard.pitch_setpoint_offset, &v);
 	_params_standard.pitch_setpoint_offset = math::radians(v);
 
+	/* xy cruise speed */
+	param_get(_params_handles_standard.xy_cruise, &v);
+	_params_standard.xy_cruise = v;
+
 
 }
 
@@ -173,9 +178,13 @@ void Standard::update_vtol_state()
 
 		} else if (_vtol_schedule.flight_mode == TRANSITION_TO_MC) {
 			// transition to MC mode if transition time has passed
+			// lyu: or if ground speed is lower than mc cruise speed
+			float ground_speed = sqrtf(_local_pos->vx*_local_pos->vx + _local_pos->vy*_local_pos->vy);
+			// velocity decrease to 1/4 of the cruise speed
+			bool velocity_decrease = ground_speed < (_params_standard.xy_cruise*0.25f);
 			// XXX: base this on XY hold velocity of MC
 			if (hrt_elapsed_time(&_vtol_schedule.transition_start) >
-			    (_params_standard.back_trans_dur * 1000000.0f)) {
+			    (_params_standard.back_trans_dur * 1000000.0f) && velocity_decrease) {
 				_vtol_schedule.flight_mode = MC_MODE;
 			}
 		}
@@ -210,6 +219,7 @@ void Standard::update_vtol_state()
 		} else if (_vtol_schedule.flight_mode == TRANSITION_TO_FW) {
 			// continue the transition to fw mode while monitoring airspeed for a final switch to fw mode
 			// lyu: here, should we cancel the time? if airspeed disable,use time, if airspeed enable,use airspeed msg
+			// lyu: transition: airspeed satisfied and time satisfied
 			if (((_params_standard.airspeed_mode == control_state_s::AIRSPD_MODE_DISABLED ||
 			      _airspeed->indicated_airspeed_m_s >= _params_standard.airspeed_trans) &&
 			     (float)hrt_elapsed_time(&_vtol_schedule.transition_start)
@@ -277,7 +287,6 @@ void Standard::update_transition_state()
 			_mc_throttle_weight = weight;
 
 			// time based blending when no airspeed sensor is set
-
 		} else if (_params_standard.airspeed_mode == control_state_s::AIRSPD_MODE_DISABLED &&
 			   (float)hrt_elapsed_time(&_vtol_schedule.transition_start) < (_params_standard.front_trans_time_min * 1000000.0f) &&
 			   (float)hrt_elapsed_time(&_vtol_schedule.transition_start) > ((_params_standard.front_trans_time_min / 2.0f) *
@@ -320,8 +329,8 @@ void Standard::update_transition_state()
 	} else if (_vtol_schedule.flight_mode == TRANSITION_TO_MC) {
 
 		// maintain FW_PSP_OFF
-		// lyu: transition back, the pitch_sp is important
-		_v_att_sp->pitch_body = _params_standard.pitch_setpoint_offset;
+		// lyu: transition back, the pitch_sp is important. We set 5 to decrease the speed
+		_v_att_sp->pitch_body = math::radians(5.0f);
 		matrix::Quatf q_sp(matrix::Eulerf(_v_att_sp->roll_body, _v_att_sp->pitch_body, _v_att_sp->yaw_body));
 		q_sp.copyTo(_v_att_sp->q_d);
 		_v_att_sp->q_d_valid = true;
@@ -371,8 +380,9 @@ void Standard::update_mc_state()
 
 	// if the thrust scale param is zero or the drone is on manual mode,
 	// then the pusher-for-pitch strategy is disabled and we can return
+	// lyu: < 5m don't use push motor
 	if (_params_standard.forward_thrust_scale < FLT_EPSILON ||
-	    !_v_control_mode->flag_control_position_enabled) {
+	    !_v_control_mode->flag_control_position_enabled || -(_local_pos->z) < 5.0f) {
 		return;
 	}
 

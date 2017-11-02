@@ -1387,7 +1387,6 @@ void MulticopterPositionControl::control_auto(float dt)
 		// only project setpoints if they are finite, else use current position
 		if (PX4_ISFINITE(_pos_sp_triplet.current.alt)) {
 			_curr_pos_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
-
 		}
 
 		if (PX4_ISFINITE(_curr_pos_sp(0)) &&
