@@ -1841,6 +1841,9 @@ Mavlink::task_main(int argc, char *argv[])
 			} else if (strcmp(myoptarg, "onboard") == 0) {
 				_mode = MAVLINK_MODE_ONBOARD;
 
+			} else if (strcmp(myoptarg, "onboardlyu") == 0) {
+				_mode = MAVLINK_MODE_ONBOARDLYU;
+
 			} else if (strcmp(myoptarg, "osd") == 0) {
 				_mode = MAVLINK_MODE_OSD;
 
@@ -2010,6 +2013,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("NAMED_VALUE_FLOAT", 1.0f);
 		configure_stream("VFR_HUD", 4.0f);
 		configure_stream("WIND_COV", 1.0f);
+		PX4_INFO("LYU: MODE normal");
 		break;
 
 	case MAVLINK_MODE_ONBOARD:
@@ -2046,6 +2050,34 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("CAMERA_TRIGGER", 500.0f);
 		configure_stream("CAMERA_IMAGE_CAPTURED", 5.0f);
 		configure_stream("ACTUATOR_CONTROL_TARGET0", 10.0f);
+		PX4_INFO("LYU: MODE onboard");
+		break;
+
+	case MAVLINK_MODE_ONBOARDLYU:
+		configure_stream("SYS_STATUS", 1.0f);
+		configure_stream("EXTENDED_SYS_STATE", 1.0f);
+		configure_stream("ATTITUDE", 30.0f);
+		configure_stream("HIGHRES_IMU", 2.0f);
+		// configure_stream("ATTITUDE_QUATERNION", 25.0f);
+		// configure_stream("RC_CHANNELS", 1.0f);
+		// configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
+		// configure_stream("ESTIMATOR_STATUS", 1.0f);
+		// configure_stream("NAV_CONTROLLER_OUTPUT", 1.0f);
+		// configure_stream("GLOBAL_POSITION_INT", 50.0f);
+		configure_stream("LOCAL_POSITION_NED", 30.0f);
+		// configure_stream("ALTITUDE", 10.0f);
+		// configure_stream("POSITION_TARGET_GLOBAL_INT", 1.0f);
+		// configure_stream("ATTITUDE_TARGET", 1.0f);
+		// configure_stream("HOME_POSITION", 0.5f);
+		// configure_stream("NAMED_VALUE_FLOAT", 1.0f);
+		// configure_stream("SERVO_OUTPUT_RAW_1", 1.0f);
+		// configure_stream("VFR_HUD", 1.0f);
+		// configure_stream("POSITION_TARGET_LOCAL_NED", 1.0f);
+		configure_stream("SYSTEM_TIME", 1.0f);
+		configure_stream("TIMESYNC", 10.0f);
+		// configure_stream("CAMERA_CAPTURE", 2.0f);
+		// configure_stream("ACTUATOR_CONTROL_TARGET0", 1.0f);
+		PX4_INFO("LYU: MODE onboardlyu");
 		break;
 
 	case MAVLINK_MODE_OSD:
@@ -2064,6 +2096,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("VFR_HUD", 25.0f);
 		configure_stream("WIND_COV", 2.0f);
 		configure_stream("SYSTEM_TIME", 1.0f);
+		PX4_INFO("LYU: MODE OSD");
 		break;
 
 	case MAVLINK_MODE_MAGIC:
@@ -2093,6 +2126,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("NAMED_VALUE_FLOAT", 1.0f);
 		configure_stream("VFR_HUD", 4.0f);
 		// configure_stream("WIND_COV", 1.0f);
+		PX4_INFO("LYU: Magic");
 		break;
 
 	case MAVLINK_MODE_CONFIG:
@@ -2126,10 +2160,12 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("CAMERA_IMAGE_CAPTURED", 5.0f);
 		configure_stream("ACTUATOR_CONTROL_TARGET0", 30.0f);
 		configure_stream("MANUAL_CONTROL", 5.0f);
+		PX4_INFO("LYU: Config");
 		break;
 
 	case MAVLINK_MODE_IRIDIUM:
 		configure_stream("HIGH_LATENCY", 0.1f);
+		PX4_INFO("LYU: MODE IRIDIUM");
 		break;
 
 	default:

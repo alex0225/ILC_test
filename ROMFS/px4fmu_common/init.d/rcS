@@ -691,6 +691,11 @@ then
 		then
 			mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 57600 -m onboard -r 5000 -x
 		fi
+		# lyu
+		if param compare SYS_COMPANION 115200
+		then
+			mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 115200 -m onboardlyu -r 10000 -x
+		fi
 		if param compare SYS_COMPANION 460800
 		then
 			mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 460800 -m onboard -r 5000 -x

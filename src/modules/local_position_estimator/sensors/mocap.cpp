@@ -6,8 +6,8 @@ extern orb_advert_t mavlink_log_pub;
 
 // required number of samples for sensor
 // to initialize
-static const uint32_t 		REQ_MOCAP_INIT_COUNT = 20;
-static const uint32_t 		MOCAP_TIMEOUT =     200000;	// 0.2 s
+static const uint32_t 		REQ_MOCAP_INIT_COUNT = 50;	// 20 to 1
+static const uint32_t 		MOCAP_TIMEOUT = 5000000;	// 0.2 s lyu: 5 s
 
 void BlockLocalPositionEstimator::mocapInit()
 {
@@ -22,7 +22,7 @@ void BlockLocalPositionEstimator::mocapInit()
 	// if finished
 	if (_mocapStats.getCount() > REQ_MOCAP_INIT_COUNT) {
 		mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] mocap position init: "
-					     "%5.2f, %5.2f, %5.2f m std %5.2f, %5.2f, %5.2f m",
+					     "%2.5f, %2.5f, %2.5f m std %2.5f, %2.5f, %2.5f m",
 					     double(_mocapStats.getMean()(0)),
 					     double(_mocapStats.getMean()(1)),
 					     double(_mocapStats.getMean()(2)),
@@ -100,11 +100,17 @@ void BlockLocalPositionEstimator::mocapCorrect()
 
 void BlockLocalPositionEstimator::mocapCheckTimeout()
 {
-	if (_timeStamp - _time_last_mocap > MOCAP_TIMEOUT) {
+	uint64_t deta_t;
+	if (_timeStamp >= _time_last_mocap){
+		deta_t = _timeStamp - _time_last_mocap;
+	} else {
+		deta_t = _time_last_mocap - _timeStamp;
+	}
+	if ( deta_t > MOCAP_TIMEOUT ) {
 		if (!(_sensorTimeout & SENSOR_MOCAP)) {
 			_sensorTimeout |= SENSOR_MOCAP;
+			mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] mocap timeout %llu", deta_t);
 			_mocapStats.reset();
-			mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] mocap timeout ");
 		}
 	}
 }

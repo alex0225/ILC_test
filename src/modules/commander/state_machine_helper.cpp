@@ -910,8 +910,12 @@ bool check_invalid_pos_nav_state(struct vehicle_status_s *status,
 
 	if (using_global_pos && (!status_flags->condition_global_position_valid || !status_flags->condition_global_velocity_valid)) {
 		fallback_required = true;
+		// warnx("1");
+
 	} else if (!using_global_pos && (!status_flags->condition_local_position_valid || !status_flags->condition_local_velocity_valid)) {
 		fallback_required = true;
+		// warnx("2");
+		// warnx("position %d, velocity %d", status_flags->condition_local_position_valid, status_flags->condition_local_velocity_valid);
 	}
 
 	if (fallback_required) {
@@ -921,6 +925,7 @@ bool check_invalid_pos_nav_state(struct vehicle_status_s *status,
 				status->nav_state = vehicle_status_s::NAVIGATION_STATE_POSCTL;
 			} else if (status_flags->condition_local_altitude_valid) {
 				status->nav_state = vehicle_status_s::NAVIGATION_STATE_ALTCTL;
+				// warnx("3");
 			} else {
 				status->nav_state = vehicle_status_s::NAVIGATION_STATE_STAB;
 			}
@@ -937,8 +942,10 @@ bool check_invalid_pos_nav_state(struct vehicle_status_s *status,
 
 		if (using_global_pos) {
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_global_position);
+			// warnx("4");
 		} else {
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_local_position);
+			// warnx("5");
 		}
 
 	}

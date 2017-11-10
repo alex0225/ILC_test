@@ -233,8 +233,8 @@ MultirotorMixer::mix(float *outputs, unsigned space, uint16_t *status_reg)
 	_saturation_status.value = 0;
 
 	// thrust boost parameters
-	float thrust_increase_factor = 1.5f;
-	float thrust_decrease_factor = 0.6f;
+	float thrust_increase_factor = 1.15f;
+	float thrust_decrease_factor = 0.85f;
 
 	/* perform initial mix pass yielding unbounded outputs, ignore yaw */
 	for (unsigned i = 0; i < _rotor_count; i++) {
