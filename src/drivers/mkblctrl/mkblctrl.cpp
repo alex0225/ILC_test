@@ -1011,7 +1011,9 @@ MK::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 
 
 	case PWM_SERVO_SET(0) ... PWM_SERVO_SET(_max_actuators - 1):
-		if (arg < 2150) {
+		// if (arg < 2150) {
+	// lyu: 4000
+		if (arg < 2600) {
 			Motor[cmd - PWM_SERVO_SET(0)].RawPwmValue = (unsigned short)arg;
 			mk_servo_set(cmd - PWM_SERVO_SET(0), scaling(arg, _rc_min_value, _rc_max_value, 0, 2047));
 

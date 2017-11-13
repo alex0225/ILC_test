@@ -153,6 +153,7 @@ private:
 
 	orb_advert_t	_v_rates_sp_pub;		/**< rate setpoint publication */
 	orb_advert_t	_actuators_0_pub;		/**< attitude actuator controls publication */
+	orb_advert_t	_actuators_1_pub;		/**< attitude actuator_1 controls publication */
 	orb_advert_t	_controller_status_pub;	/**< controller status publication */
 
 	orb_id_t _rates_sp_id;	/**< pointer to correct rates setpoint uORB metadata structure */
@@ -166,6 +167,7 @@ private:
 	struct manual_control_setpoint_s	_manual_control_sp;	/**< manual control setpoint */
 	struct vehicle_control_mode_s		_v_control_mode;	/**< vehicle control mode */
 	struct actuator_controls_s			_actuators;			/**< actuator controls */
+	struct actuator_controls_s			_actuators_1;		/**< actuator controls 1*/
 	struct actuator_armed_s				_armed;				/**< actuator arming status */
 	struct vehicle_status_s				_vehicle_status;	/**< vehicle status */
 	struct multirotor_motor_limits_s	_motor_limits;		/**< motor limits */
@@ -409,6 +411,7 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	/* publications */
 	_v_rates_sp_pub(nullptr),
 	_actuators_0_pub(nullptr),
+	_actuators_1_pub(nullptr),
 	_controller_status_pub(nullptr),
 	_rates_sp_id(nullptr),
 	_actuators_id(nullptr),
@@ -421,6 +424,7 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	_manual_control_sp{},
 	_v_control_mode{},
 	_actuators{},
+	_actuators_1{},
 	_armed{},
 	_vehicle_status{},
 	_motor_limits{},
@@ -1343,6 +1347,22 @@ MulticopterAttitudeControl::task_main()
 					}
 
 				}
+
+				// lyu: use _actuators_1_pub to pub control command
+				// _actuators_1.control[0] = -0.8f;
+				// _actuators_1.control[1] = 0.8f;
+				// _actuators_1.control[2] = 2.0f;
+				// _actuators_1.control[4] = -1.0f;
+				// _actuators_1.timestamp = hrt_absolute_time();
+				// _actuators_1.timestamp_sample = _ctrl_state.timestamp;
+
+				// if (!_actuators_0_circuit_breaker_enabled) {
+				// 	if (_actuators_1_pub != nullptr) {
+				// 		orb_publish(ORB_ID(actuator_controls_1), _actuators_1_pub, &_actuators_1);
+				// 	} else {
+				// 		_actuators_1_pub = orb_advertise(ORB_ID(actuator_controls_1), &_actuators_1);
+				// 	}
+				// }
 
 				/* publish controller status */
 				if (_controller_status_pub != nullptr) {

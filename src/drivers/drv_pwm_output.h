@@ -104,7 +104,9 @@ __BEGIN_DECLS
 /**
  * Highest maximum PWM in us
  */
-#define PWM_HIGHEST_MAX 2150
+ // lyu: modified here PWM HIGHEST MAX
+// #define PWM_HIGHEST_MAX 2150
+#define PWM_HIGHEST_MAX 2600
 
 /**
  * Default maximum PWM in us
