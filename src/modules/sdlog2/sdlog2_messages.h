@@ -660,6 +660,14 @@ struct log_PARM_s {
 	char name[64];
 	float value;
 };
+
+/* --- cxy a_log data ---*/
+// #define LOG_ALOG_MSG 132
+// struct log_ALOG_s {
+// 	float a_input;
+// 	float a_current;
+// 	float a_err;
+// };
 #pragma pack(pop)
 
 // the lower type of initialisation is not supported in C++
@@ -734,7 +742,9 @@ static const struct log_format_s log_formats[] = {
 	/* FMT: don't write format of format message, it's useless */
 	LOG_FORMAT(TIME, "Q", "StartTime"),
 	LOG_FORMAT(VER, "NZ", "Arch,FwGit"),
-	LOG_FORMAT(PARM, "Zf", "Name,Value")
+	LOG_FORMAT(PARM, "Zf", "Name,Value"),
+	//cxy
+	// LOG_FORMAT(ALOG, "fff", "ainput,acurrent,aerr")
 };
 
 static const unsigned log_formats_num = sizeof(log_formats) / sizeof(log_formats[0]);

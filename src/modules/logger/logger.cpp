@@ -51,6 +51,8 @@
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_command_ack.h>
+//cxy
+// #include <uORB/topics/a_log.h>
 
 #include <drivers/drv_hrt.h>
 #include <px4_includes.h>
@@ -583,6 +585,7 @@ void Logger::add_common_topics()
 	add_topic("camera_trigger");
 	add_topic("commander_state", 100);
 	add_topic("control_state", 100);
+	// add_topic("control_state",5);
 	add_topic("cpuload");
 	add_topic("differential_pressure", 50);
 	add_topic("distance_sensor");
@@ -614,7 +617,11 @@ void Logger::add_common_topics()
 	add_topic("vehicle_vision_attitude");
 	add_topic("vehicle_vision_position");
 	add_topic("vtol_vehicle_status", 100);
+
 	add_topic("wind_estimate", 100);
+	add_topic("a_log_att");
+	add_topic("a_log_pos");
+	
 }
 
 void Logger::add_estimator_replay_topics()

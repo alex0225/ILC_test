@@ -64,6 +64,9 @@
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
+// //cxy
+#include <uORB/topics/a_log_att.h>
+#include <uORB/topics/a_log_pos.h>
 
 #include <float.h>
 #include <lib/geo/geo.h>
@@ -124,9 +127,16 @@ private:
 	int		_local_pos_sub;			/**< vehicle local position */
 	int		_pos_sp_triplet_sub;		/**< position setpoint triplet */
 	int		_home_pos_sub; 			/**< home position */
+	// //cxy
+	int 	a_log_att_sub;
+	int 	a_log_pos_sub;
+
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
-
+	//cxy
+	orb_advert_t	a_log_att_pub;
+	orb_advert_t	a_log_pos_pub;
+	
 	orb_id_t _attitude_setpoint_id;
 
 	struct vehicle_status_s 			_vehicle_status; 	/**< vehicle status */
@@ -139,6 +149,10 @@ private:
 	struct position_setpoint_triplet_s		_pos_sp_triplet;	/**< vehicle global position setpoint triplet */
 	struct vehicle_local_position_setpoint_s	_local_pos_sp;		/**< vehicle local position setpoint */
 	struct home_position_s				_home_pos; 				/**< home position */
+
+	// //cxy
+	struct a_log_att_s 						a_log_att;
+	struct a_log_pos_s 						a_log_pos;
 
 	perf_counter_t	_loop_perf;			/**< loop performance counter */
 	perf_counter_t  _update_perf;			/**< loop rate */
@@ -279,6 +293,10 @@ private:
 	uint8_t _vxy_reset_counter;
 	uint8_t _heading_reset_counter;
 
+	//cxy
+	uint64_t last_t;
+	uint64_t last_t_in;
+
 	matrix::Dcmf _R_setpoint;
 
 	/**
@@ -393,6 +411,10 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_local_pos_sub(-1),
 	_pos_sp_triplet_sub(-1),
 	_home_pos_sub(-1),
+	// //cxy
+	a_log_att_sub(-1),
+	a_log_pos_sub(-1),
+
 	/* publications */
 	_att_sp_pub(nullptr),
 	_local_pos_sp_pub(nullptr),
@@ -407,6 +429,9 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_pos_sp_triplet{},
 	_local_pos_sp{},
 	_home_pos{},
+	// //cxy
+	a_log_att{},
+	a_log_pos{},
 	/* performance counters */
 	_loop_perf(perf_alloc(PC_ELAPSED, "mc_pos_control")),
 	_update_perf(perf_alloc(PC_INTERVAL,"mc_pos_control_rate")),
@@ -474,6 +499,11 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_R_setpoint.identity();
 
 	_thrust_int.zero();
+
+
+	//cxy
+	last_t=0;
+	last_t_in=0;
 
 	_params_handles.thr_min		= param_find("MPC_THR_MIN");
 	_params_handles.thr_max		= param_find("MPC_THR_MAX");
@@ -775,6 +805,16 @@ MulticopterPositionControl::poll_subscriptions()
 
 	if (updated) {
 		orb_copy(ORB_ID(home_position), _home_pos_sub, &_home_pos);
+	}
+
+	// //cxy
+	orb_check(a_log_att_sub, &updated);
+
+	if (updated) {
+		orb_copy(ORB_ID(a_log_att), a_log_att_sub, &a_log_att);
+		// double aa_err=(double)a_log_att.a_err;
+		// double aa_current=(double)a_log_att.a_current;
+		// PX4_WARN("aa_err %f, aa_current %f ", aa_err,aa_current);
 	}
 }
 
@@ -1637,6 +1677,7 @@ MulticopterPositionControl::do_control(float dt)
 	 * can disable this and run velocity controllers directly in this cycle */
 	_run_pos_control = true;
 	_run_alt_control = true;
+	
 
 	/* if not in auto mode, we reset limit_vel_xy flag */
 	if (_control_mode.flag_control_manual_enabled || _control_mode.flag_control_offboard_enabled) {
@@ -2126,6 +2167,10 @@ MulticopterPositionControl::calculate_thrust_setpoint(float dt)
 	_local_pos_sp.acc_y = thrust_sp(1) * CONSTANTS_ONE_G;
 	_local_pos_sp.acc_z = thrust_sp(2) * CONSTANTS_ONE_G;
 
+	// float flag_dt_in = (hrt_absolute_time() - last_t_in) / 1000000.0f;
+	// last_t_in = hrt_absolute_time();
+	// a_log_att.hz_positionin=1.0f/flag_dt_in;
+
 	_att_sp.timestamp = hrt_absolute_time();
 }
 
@@ -2253,6 +2298,11 @@ MulticopterPositionControl::task_main()
 	_pos_sp_triplet_sub = orb_subscribe(ORB_ID(position_setpoint_triplet));
 	_home_pos_sub = orb_subscribe(ORB_ID(home_position));
 
+	// //cxy
+	a_log_att_sub=orb_subscribe(ORB_ID(a_log_att));
+	a_log_pos_pub = orb_advertise(ORB_ID(a_log_pos), &a_log_pos);
+
+
 	parameters_update(true);
 
 	/* get an initial update for all sensor and status data */
@@ -2279,6 +2329,14 @@ MulticopterPositionControl::task_main()
 		perf_count(_update_perf);
 		/* wait for up to 20ms for data */
 		int pret = px4_poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 20);
+
+		//cxy
+		float flag_dt = (hrt_absolute_time() - last_t) / 1000000.0f;
+		last_t = hrt_absolute_time();
+		a_log_pos.hz_position=1/flag_dt;
+		// double hz_pos=double(a_log.hz_position);
+		// PX4_WARN("HZ_POS , %f", hz_pos );
+		
 
 		/* timed out - periodic check for _task_should_exit */
 		if (pret == 0) {
@@ -2362,7 +2420,27 @@ MulticopterPositionControl::task_main()
 		    _control_mode.flag_control_velocity_enabled ||
 		    _control_mode.flag_control_acceleration_enabled) {
 
+			//cxy
+			// orb_copy(ORB_ID(a_log), a_log_sub, &a_log);
+			if(a_log_att.flag_lqr_enable>0.5f)
+			{
+				_reset_int_xy = true;
+				_reset_int_z = true;
+			}
+
+			if(_reset_int_xy)
+			{
+				a_log_pos.flag_intxy=sin(hrt_absolute_time());
+			}
+			if(_reset_int_z)
+			{
+				a_log_pos.flag_intz=2+sin(hrt_absolute_time());
+			}
+			/////////////////
+			a_log_pos.timestamp = hrt_absolute_time();
+			orb_publish(ORB_ID(a_log_pos), a_log_pos_pub, &a_log_pos);
 			do_control(dt);
+
 
 			/* fill local position, velocity and thrust setpoint */
 			_local_pos_sp.timestamp = hrt_absolute_time();
